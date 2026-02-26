@@ -7,15 +7,28 @@ import { ko } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
 import { MessageCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import 'react-calendar/dist/Calendar.css';
 import { getNoteByDate } from '@/lib/notice-firebase';
+import { useAuth } from '@/components/AuthContext';
 
 export default function NoticeParentsPage() {
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
     const [date, setDate] = useState<Date>(new Date());
     const [summary, setSummary] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    // 로그인 안 된 상태면 로그인 페이지로 이동
     useEffect(() => {
+        if (!authLoading && !user) {
+            router.replace('/login');
+        }
+    }, [authLoading, user, router]);
+
+    useEffect(() => {
+        if (!user) return;
+
         const loadNote = async () => {
             setIsLoading(true);
             setSummary('');
@@ -34,7 +47,7 @@ export default function NoticeParentsPage() {
         };
 
         loadNote();
-    }, [date]);
+    }, [date, user]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">

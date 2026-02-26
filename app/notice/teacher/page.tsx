@@ -7,20 +7,21 @@ import { ko } from 'date-fns/locale';
 import { Sparkles, Save, Trash2, Loader2, List, X, CheckSquare, Square, ArrowLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import 'react-calendar/dist/Calendar.css';
 import { summarizeNote, AVAILABLE_MODELS, DEFAULT_MODEL } from '@/lib/notice-ai';
 import { saveNote, getNoteByDate, deleteNote, getAllNotes } from '@/lib/notice-firebase';
+import { useAuth } from '@/components/AuthContext';
 
 export default function NoticeTeacherPage() {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [password, setPassword] = useState('');
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
     const [date, setDate] = useState<Date>(new Date());
     const [note, setNote] = useState('');
     const [summary, setSummary] = useState('');
     const [isFetching, setIsFetching] = useState(false);
     const [isSummarizing, setIsSummarizing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState('');
     const [statusMsg, setStatusMsg] = useState('');
     const [isEditingSummary, setIsEditingSummary] = useState(false);
     const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
@@ -31,8 +32,15 @@ export default function NoticeTeacherPage() {
     const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
 
     // Load note when date changes
+    // 로그인 안 된 상태면 로그인 페이지로 이동
     useEffect(() => {
-        if (!isLoggedIn) return;
+        if (!authLoading && !user) {
+            router.replace('/login');
+        }
+    }, [authLoading, user, router]);
+
+    useEffect(() => {
+        if (!user) return;
 
         const loadNote = async () => {
             setIsFetching(true);
@@ -56,17 +64,9 @@ export default function NoticeTeacherPage() {
         };
 
         loadNote();
-    }, [date, isLoggedIn]);
+    }, [date, user]);
 
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (password === 'teacher1234') {
-            setIsLoggedIn(true);
-            setError('');
-        } else {
-            setError('비밀번호가 올바르지 않습니다.');
-        }
-    };
+
 
     const handleSummarize = async () => {
         if (!note.trim()) {
@@ -201,29 +201,10 @@ export default function NoticeTeacherPage() {
 
     const isAllSelected = noteList.length > 0 && noteList.every((item) => selectedNotes.has(item.date));
 
-    if (!isLoggedIn) {
+    if (authLoading || !user) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4">
-                <div className="w-full max-w-sm bg-white shadow-lg rounded-2xl p-8 border border-gray-100">
-                    <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-6">
-                        <ArrowLeft className="w-4 h-4 mr-1" /> 메인으로
-                    </Link>
-                    <h2 className="text-xl font-bold text-gray-900 mb-1">교사 로그인</h2>
-                    <p className="text-sm text-gray-500 mb-6">알림장 관리 페이지</p>
-                    <form onSubmit={handleLogin}>
-                        <input
-                            type="password"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent mb-4 [transform:translateZ(0)]"
-                            placeholder="비밀번호를 입력하세요"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-                        <button type="submit" className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors">
-                            로그인
-                        </button>
-                    </form>
-                </div>
+                <div className="w-5 h-5 border-2 border-emerald-400/40 border-t-emerald-400 rounded-full animate-spin" />
             </div>
         );
     }

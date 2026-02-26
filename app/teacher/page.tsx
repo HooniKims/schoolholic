@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { collection, addDoc, getDocs, deleteDoc, doc, query, where, onSnapshot, updateDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import Calendar from '@/components/Calendar';
 import Button from '@/components/Button';
@@ -12,14 +13,11 @@ import { Period, AvailableSlot, Reservation, DEFAULT_PERIODS } from '@/types';
 import { formatDate, formatDateKorean, generateId } from '@/lib/utils';
 import { Clock, Trash2, Settings, Calendar as CalendarIcon, Download, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useAuth } from '@/components/AuthContext';
 
 export default function TeacherPage() {
-  const TEACHER_PASSWORD =
-    process.env.NEXT_PUBLIC_TEACHER_PASSWORD || 'teacher1234';
-
-  const [authorized, setAuthorized] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [authChecking, setAuthChecking] = useState(true);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   const [teacherId] = useState(
     process.env.NEXT_PUBLIC_TEACHER_ID || 'default_teacher_id'
@@ -39,19 +37,12 @@ export default function TeacherPage() {
     onConfirm: () => { },
   });
 
+  // 로그인 안 된 상태면 로그인 페이지로 이동
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const stored = localStorage.getItem('teacherAuthorizedAt');
-    if (stored) {
-      const ts = parseInt(stored, 10);
-      const ONE_DAY = 24 * 60 * 60 * 1000;
-      if (!Number.isNaN(ts) && Date.now() - ts < ONE_DAY) {
-        setAuthorized(true);
-      }
+    if (!authLoading && !user) {
+      router.replace('/login');
     }
-    setAuthChecking(false);
-  }, []);
+  }, [authLoading, user, router]);
 
   // 교시 시간 로드
   useEffect(() => {
@@ -180,17 +171,7 @@ export default function TeacherPage() {
   };
 
   // 상담 시간 설정 완료
-  const handlePasswordSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (passwordInput === TEACHER_PASSWORD) {
-      setAuthorized(true);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('teacherAuthorizedAt', String(Date.now()));
-      }
-    } else {
-      alert('비밀번호가 올바르지 않습니다.');
-    }
-  };
+
 
   const handleSaveSlots = async () => {
     try {
@@ -313,39 +294,11 @@ export default function TeacherPage() {
     XLSX.writeFile(workbook, fileName);
   };
 
-  if (authChecking) {
+  if (authLoading || !user) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-[60vh]">
           <LoadingSpinner />
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!authorized) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <form
-            onSubmit={handlePasswordSubmit}
-            className="w-full max-w-sm bg-white shadow-md rounded-lg p-6 space-y-4"
-          >
-            <h2 className="text-lg font-semibold text-center">교사 전용 페이지</h2>
-            <p className="text-sm text-gray-600 text-center">
-              비밀번호를 입력해 주세요.
-            </p>
-            <input
-              type="password"
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [transform:translateZ(0)]"
-              placeholder="비밀번호"
-            />
-            <Button type="submit" className="w-full">
-              입장하기
-            </Button>
-          </form>
         </div>
       </Layout>
     );

@@ -11,47 +11,25 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Lazy-initialized singletons (빌드 타임 에러 방지)
-let _app: FirebaseApp | null = null;
-let _db: Firestore | null = null;
-let _auth: Auth | null = null;
-let _googleProvider: GoogleAuthProvider | null = null;
+// 빌드 타임에는 환경변수가 없을 수 있으므로 안전하게 초기화
+let app: FirebaseApp | null = null;
+let db: Firestore;
+let auth: Auth;
+let googleProvider: GoogleAuthProvider;
 
-function getApp(): FirebaseApp {
-  if (!_app) {
-    _app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-  }
-  return _app;
+try {
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+  db = getFirestore(app);
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
+  googleProvider.setCustomParameters({ prompt: 'select_account' });
+} catch (error) {
+  // 빌드 타임에 Firebase 초기화 실패 시 더미 객체 생성
+  // 실제 런타임에서는 환경변수가 설정되어 있으므로 정상 동작합니다.
+  console.warn('Firebase 초기화 실패 (빌드 타임일 수 있음):', error);
+  db = {} as Firestore;
+  auth = {} as Auth;
+  googleProvider = {} as GoogleAuthProvider;
 }
 
-// Proxy objects that lazily initialize on first property access
-// This prevents Firebase from being initialized during build/SSR
-export const app = new Proxy({} as FirebaseApp, {
-  get(_, prop) {
-    return Reflect.get(getApp(), prop);
-  },
-});
-
-export const db = new Proxy({} as Firestore, {
-  get(_, prop) {
-    if (!_db) _db = getFirestore(getApp());
-    return Reflect.get(_db, prop);
-  },
-});
-
-export const auth = new Proxy({} as Auth, {
-  get(_, prop) {
-    if (!_auth) _auth = getAuth(getApp());
-    return Reflect.get(_auth, prop);
-  },
-});
-
-export const googleProvider = new Proxy({} as GoogleAuthProvider, {
-  get(_, prop) {
-    if (!_googleProvider) {
-      _googleProvider = new GoogleAuthProvider();
-      _googleProvider.setCustomParameters({ prompt: 'select_account' });
-    }
-    return Reflect.get(_googleProvider, prop);
-  },
-});
+export { app, db, auth, googleProvider };

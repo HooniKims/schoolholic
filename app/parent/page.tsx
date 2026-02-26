@@ -15,6 +15,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { Calendar, CalendarPlus, CheckCircle2, Clock, MessageSquare, Search, User, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import Button from '@/components/Button';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -22,11 +23,31 @@ import ConfirmModal from '@/components/ConfirmModal';
 import { AvailableSlot, COUNSELING_TOPICS, CounselingTopic, Period, Reservation, DEFAULT_PERIODS } from '@/types';
 import { formatDateKorean } from '@/lib/utils';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/components/AuthContext';
 
 type Tab = 'book' | 'check';
 
 export default function ParentPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('book');
+
+  // 로그인 안 된 상태면 로그인 페이지로 이동
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/login');
+    }
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <LoadingSpinner />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout title="학부모(보호자) 페이지" description="상담 예약 및 예약 확인">
