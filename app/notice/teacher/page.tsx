@@ -8,7 +8,7 @@ import { Sparkles, Save, Trash2, Loader2, List, X, CheckSquare, Square, ArrowLef
 import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import 'react-calendar/dist/Calendar.css';
-import { summarizeNote } from '@/lib/notice-ai';
+import { summarizeNote, AVAILABLE_MODELS, DEFAULT_MODEL } from '@/lib/notice-ai';
 import { saveNote, getNoteByDate, deleteNote, getAllNotes } from '@/lib/notice-firebase';
 
 export default function NoticeTeacherPage() {
@@ -23,6 +23,7 @@ export default function NoticeTeacherPage() {
     const [error, setError] = useState('');
     const [statusMsg, setStatusMsg] = useState('');
     const [isEditingSummary, setIsEditingSummary] = useState(false);
+    const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
 
     // List Management States
     const [showList, setShowList] = useState(false);
@@ -77,7 +78,7 @@ export default function NoticeTeacherPage() {
         setStatusMsg('AI가 내용을 정리 중입니다...');
 
         try {
-            const result = await summarizeNote(note, date);
+            const result = await summarizeNote(note, date, selectedModel);
             setSummary(result);
             setIsEditingSummary(false);
             setStatusMsg('정리가 완료되었습니다. 내용을 확인하고 저장하세요.');
@@ -268,6 +269,22 @@ export default function NoticeTeacherPage() {
                                     {format(date, 'yyyy년 M월 d일 (EEE)', { locale: ko })} 전달 사항
                                 </h2>
                                 {statusMsg && <span className="text-sm text-emerald-600 font-medium">{statusMsg}</span>}
+                            </div>
+
+                            {/* AI 모델 선택 */}
+                            <div className="flex items-center gap-3 mb-4 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                                <span className="text-sm font-semibold text-purple-700 whitespace-nowrap">🤖 AI 모델</span>
+                                <select
+                                    value={selectedModel}
+                                    onChange={(e) => setSelectedModel(e.target.value)}
+                                    className="flex-1 px-3 py-2 text-sm border border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                                >
+                                    {AVAILABLE_MODELS.map((m) => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.name} — {m.description}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             <textarea

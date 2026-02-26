@@ -6,7 +6,7 @@
 - **Firebase**: Firestore (알림장 & 상담 예약 데이터)
   - 기존 데이터베이스 구조와 문서를 그대로 유지 (데이터 손실 없음)
   - 알림장(`notes`), 교사정보(`teachers`), 상담슬롯(`availableSlots`), 예약정보(`reservations`) 컬렉션 공존
-- **AI**: Upstage Solar Mini (알림장 AI 정리)
+- **AI**: 로컬 LLM (Ollama via api.alluser.site 프록시, 브라우저 직접 호출)
 - **디자인/UI**: 
   - 기본 폰트: 가독성을 높인 **Pretendard** 적용
   - 다크 테마 기반 글래스모피즘(Glassmorphism)
@@ -43,6 +43,12 @@
   - [x] 버튼 호버 시 3D 상승 효과 및 테마별 네온 글로우 섀도우 추가
   - [x] 메인 기능 설명 아이콘을 직관적인 이모지(📋, 🗓️)로 교체 및 애니메이션 추가
   - [x] 파비콘(`icon.svg`)을 모던한 학사모 형태로 변경
+- [x] 통합 프로젝트 깃허브 업로드 (HooniKims/schoolholic)
+- [x] 알림장 AI를 Upstage Solar Mini → 로컬 LLM (Ollama) 으로 전환
+  - [x] notice-ai.ts: OpenAI SDK → 브라우저 직접 fetch (api.alluser.site 프록시)
+  - [x] 자동 재시도 로직, 텍스트 후처리, Sandwich 기법 적용
+  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가
+  - [x] 환경변수 NEXT_PUBLIC_UPSTAGE_API_KEY → NEXT_PUBLIC_OLLAMA_API_KEY 변경
 
 ## 예정된 작업
 - [ ] Vercel 배포
