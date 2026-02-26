@@ -1,0 +1,288 @@
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    signOut,
+    sendPasswordResetEmail,
+    updatePassword,
+    reauthenticateWithCredential,
+    EmailAuthProvider,
+    User,
+} from 'firebase/auth';
+import {
+    doc,
+    setDoc,
+    getDoc,
+    updateDoc,
+    query,
+    collection,
+    where,
+    getDocs,
+    Timestamp,
+    serverTimestamp,
+} from 'firebase/firestore';
+import { auth, db, googleProvider } from './firebase';
+import { UserProfile, UserRole, ParentProfile } from '@/types/auth';
+
+// ============================================================
+// 회원가입
+// ============================================================
+
+/** 이메일/비밀번호로 회원가입 */
+export async function signUpWithEmail(email: string, password: string): Promise<User> {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
+}
+
+/** Firestore에 사용자 프로필 생성 */
+export async function createUserProfile(
+    uid: string,
+    data: {
+        email: string;
+        role: UserRole;
+        name: string;
+        schoolName: string;
+        schoolCode: string;
+        grade: number;
+        classNum: number;
+        studentName?: string;
+    }
+): Promise<void> {
+    const now = Timestamp.now();
+
+    const profileData: Record<string, unknown> = {
+        uid,
+        email: data.email,
+        role: data.role,
+        name: data.name,
+        schoolName: data.schoolName,
+        schoolCode: data.schoolCode,
+        grade: data.grade,
+        classNum: data.classNum,
+        isLocked: false,
+        failedLoginAttempts: 0,
+        createdAt: now,
+        updatedAt: now,
+    };
+
+    // 학부모인 경우 학생이름 + 교사 매칭
+    if (data.role === 'parent') {
+        profileData.studentName = data.studentName || '';
+        profileData.matchedTeacherId = await matchTeacher(
+            data.schoolCode,
+            data.grade,
+            data.classNum
+        );
+    }
+
+    await setDoc(doc(db, 'users', uid), profileData);
+}
+
+// ============================================================
+// 로그인
+// ============================================================
+
+/** 이메일/비밀번호로 로그인 (실패 횟수 추적 포함) */
+export async function signInWithEmail(
+    email: string,
+    password: string
+): Promise<{ user: User; profile: UserProfile }> {
+    // 먼저 이메일로 사용자 프로필 찾기 (잠금 확인)
+    const profileByEmail = await getUserProfileByEmail(email);
+
+    if (profileByEmail?.isLocked) {
+        throw new Error('ACCOUNT_LOCKED');
+    }
+
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // 로그인 성공 → 실패 횟수 초기화
+        if (profileByEmail) {
+            await updateDoc(doc(db, 'users', user.uid), {
+                failedLoginAttempts: 0,
+                updatedAt: serverTimestamp(),
+            });
+        }
+
+        const profile = await getUserProfile(user.uid);
+        if (!profile) {
+            throw new Error('PROFILE_NOT_FOUND');
+        }
+
+        return { user, profile };
+    } catch (error: unknown) {
+        const firebaseError = error as { code?: string; message?: string };
+
+        // 계정 잠금 에러는 그대로 전달
+        if (firebaseError.message === 'ACCOUNT_LOCKED') {
+            throw error;
+        }
+
+        // 잘못된 비밀번호 → 실패 횟수 증가
+        if (
+            firebaseError.code === 'auth/wrong-password' ||
+            firebaseError.code === 'auth/invalid-credential'
+        ) {
+            if (profileByEmail) {
+                await incrementFailedAttempts(profileByEmail.uid);
+            }
+        }
+
+        throw error;
+    }
+}
+
+/** Google 소셜 로그인 */
+export async function signInWithGoogle(): Promise<{
+    user: User;
+    profile: UserProfile | null;
+    isNewUser: boolean;
+}> {
+    const userCredential = await signInWithPopup(auth, googleProvider);
+    const user = userCredential.user;
+
+    // 기존 프로필이 있는지 확인
+    const profile = await getUserProfile(user.uid);
+
+    if (profile) {
+        // 잠금 확인
+        if (profile.isLocked) {
+            await signOut(auth);
+            throw new Error('ACCOUNT_LOCKED');
+        }
+        return { user, profile, isNewUser: false };
+    }
+
+    // 새 사용자 → 프로필 등록이 필요함
+    return { user, profile: null, isNewUser: true };
+}
+
+/** 로그아웃 */
+export async function signOutUser(): Promise<void> {
+    await signOut(auth);
+}
+
+// ============================================================
+// 비밀번호 관리
+// ============================================================
+
+/** 비밀번호 재설정 이메일 발송 */
+export async function resetPassword(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email);
+}
+
+/** 비밀번호 변경 (현재 비밀번호 재인증 후) */
+export async function changePassword(
+    currentPassword: string,
+    newPassword: string
+): Promise<void> {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+        throw new Error('로그인된 사용자가 없습니다.');
+    }
+
+    // 재인증
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+
+    // 비밀번호 변경
+    await updatePassword(user, newPassword);
+}
+
+// ============================================================
+// 프로필 조회
+// ============================================================
+
+/** UID로 사용자 프로필 조회 */
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+    const docSnap = await getDoc(doc(db, 'users', uid));
+    if (!docSnap.exists()) return null;
+    return docSnap.data() as UserProfile;
+}
+
+/** 이메일로 사용자 프로필 조회 */
+async function getUserProfileByEmail(email: string): Promise<UserProfile | null> {
+    const q = query(collection(db, 'users'), where('email', '==', email));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].data() as UserProfile;
+}
+
+// ============================================================
+// 계정 잠금 관리
+// ============================================================
+
+const MAX_FAILED_ATTEMPTS = 10;
+
+/** 로그인 실패 횟수 증가 (10회 시 잠금) */
+export async function incrementFailedAttempts(uid: string): Promise<boolean> {
+    const profile = await getUserProfile(uid);
+    if (!profile) return false;
+
+    const newCount = (profile.failedLoginAttempts || 0) + 1;
+    const isLocked = newCount >= MAX_FAILED_ATTEMPTS;
+
+    await updateDoc(doc(db, 'users', uid), {
+        failedLoginAttempts: newCount,
+        isLocked,
+        updatedAt: serverTimestamp(),
+    });
+
+    return isLocked;
+}
+
+/** 관리자 → 계정 잠금 해제 */
+export async function unlockAccount(uid: string): Promise<void> {
+    await updateDoc(doc(db, 'users', uid), {
+        isLocked: false,
+        failedLoginAttempts: 0,
+        updatedAt: serverTimestamp(),
+    });
+}
+
+/** 잠긴 계정 목록 조회 (관리자용) */
+export async function getLockedAccounts(): Promise<UserProfile[]> {
+    const q = query(collection(db, 'users'), where('isLocked', '==', true));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => doc.data() as UserProfile);
+}
+
+// ============================================================
+// 교사-학부모 매칭
+// ============================================================
+
+/** 학교코드 + 학년 + 반으로 교사 찾기 */
+export async function matchTeacher(
+    schoolCode: string,
+    grade: number,
+    classNum: number
+): Promise<string | null> {
+    if (!schoolCode) return null;
+
+    const q = query(
+        collection(db, 'users'),
+        where('role', '==', 'teacher'),
+        where('schoolCode', '==', schoolCode),
+        where('grade', '==', grade),
+        where('classNum', '==', classNum)
+    );
+
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+
+    return snapshot.docs[0].data().uid;
+}
+
+/** 교사에 매칭된 학부모 목록 조회 */
+export async function getMatchedParents(teacherUid: string): Promise<ParentProfile[]> {
+    const q = query(
+        collection(db, 'users'),
+        where('role', '==', 'parent'),
+        where('matchedTeacherId', '==', teacherUid)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => doc.data() as ParentProfile);
+}

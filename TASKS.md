@@ -3,9 +3,9 @@
 ## 프로젝트 개요
 - **프레임워크**: Next.js 16 (App Router) + TypeScript + Tailwind CSS v4
 - **배포 대상**: Vercel
-- **Firebase**: Firestore (알림장 & 상담 예약 데이터)
+- **Firebase**: Firestore (알림장 & 상담 예약 데이터) + Authentication (이메일/비밀번호 + Google 로그인)
   - 기존 데이터베이스 구조와 문서를 그대로 유지 (데이터 손실 없음)
-  - 알림장(`notes`), 교사정보(`teachers`), 상담슬롯(`availableSlots`), 예약정보(`reservations`) 컬렉션 공존
+  - 알림장(`notes`), 교사정보(`teachers`), 상담슬롯(`availableSlots`), 예약정보(`reservations`), 사용자(`users`) 컬렉션 공존
 - **AI**: 로컬 LLM (Ollama via api.alluser.site 프록시, 브라우저 직접 호출)
 - **디자인/UI**: 
   - 기본 폰트: 가독성을 높인 **Pretendard** 적용
@@ -16,6 +16,11 @@
 | 경로 | 설명 |
 |------|------|
 | `/` | 메인 랜딩 페이지 |
+| `/login` | 로그인 (이메일/비밀번호 + Google) |
+| `/signup` | 회원가입 (교사/학부모 역할 선택) |
+| `/forgot-password` | 비밀번호 찾기 (이메일 재설정) |
+| `/change-password` | 비밀번호 변경 |
+| `/admin` | 관리자 페이지 (계정 잠금 해제) |
 | `/notice/teacher` | 알림장 - 교사용 (작성/AI정리/저장/삭제) |
 | `/notice/parents` | 알림장 - 학부모용 (날짜별 조회) |
 | `/teacher` | 상담 예약 - 교사용 (시간 설정/예약 관리) |
@@ -49,6 +54,16 @@
   - [x] 자동 재시도 로직, 텍스트 후처리, Sandwich 기법 적용
   - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가
   - [x] 환경변수 NEXT_PUBLIC_UPSTAGE_API_KEY → NEXT_PUBLIC_OLLAMA_API_KEY 변경
+- [x] 로그인/인증 시스템 구현
+  - [x] Firebase Authentication 설정 (이메일/비밀번호 + Google 소셜 로그인)
+  - [x] Firestore 사용자 프로필 스키마 (교사/학부모/관리자 역할)
+  - [x] 인증 서비스 레이어 (auth-firebase.ts)
+  - [x] NEIS 학교 검색 API 연동 (school-api.ts)
+  - [x] 인증 Context + AuthGuard 컴포넌트
+  - [x] 로그인/회원가입/비밀번호 찾기·변경 페이지
+  - [x] 관리자 페이지 (계정 잠금 해제)
+  - [x] 로그인 10회 실패 시 계정 잠금 기능
+  - [x] 메인 페이지에 로그인/로그아웃 UI 통합
 
 ## 예정된 작업
 - [ ] Vercel 배포
