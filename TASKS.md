@@ -11,7 +11,6 @@
   - 기본 폰트: 가독성을 높인 **Pretendard** 적용
   - 다크 테마 기반 글래스모피즘(Glassmorphism)
   - 직관적인 이모지 타이틀 및 인터랙티브 호버 애니메이션(Hover Glow & Translate) 적용
-  - **다크/라이트 모드 토글 지원** (CSS 변수 + data-theme 기반)
   - **PWA 지원** (manifest.json + Service Worker + 오프라인 캐싱)
 
 ## 라우트 구조
@@ -81,12 +80,11 @@
 - [x] 로그인 잠금 로직 서버 사이드 검증(Next API)으로 강화
   - [x] `/api/auth/check-lock` API Route 생성 (Firestore REST API 기반)
   - [x] `auth-firebase.ts`에서 잠금 확인/실패 횟수 관리를 서버 API 호출로 전환
-- [x] 다크 모드 지원
-  - [x] CSS 변수 기반 다크/라이트 모드 시스템 (`globals.css`)
-  - [x] `ThemeToggle.tsx` 컴포넌트 (localStorage + 시스템 설정 fallback)
-  - [x] FOUC 방지 테마 초기화 스크립트 (`layout.tsx`)
-  - [x] 알림장, 상담 예약, 메인 페이지 등 전체 다크 모드 대응
-  - [x] react-calendar, prose 마크다운 등 서드파티 컴포넌트 다크 모드
+- [x] ~~다크 모드 지원~~ → 삭제 완료 (기본 다크 테마 유지, 토글 기능 제거)
+- [x] 회원 탈퇴 기능
+  - [x] `UserProfileModal.tsx` 컴포넌트 (아이디, 가입일 표시 + 3단계 탈퇴 확인 플로우)
+  - [x] `auth-firebase.ts`에 `deleteAccount()` 함수 (Firebase Auth + Firestore 프로필 삭제)
+  - [x] 메인 페이지 사람 아이콘 클릭 → 프로필 팝업 연동
 - [x] 모바일 반응형 최적화
   - [x] `Layout.tsx` 모바일 반응형 패딩/폰트 사이즈 개선
   - [x] 터치 타겟 최소 44px 보장 (CSS)

@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 /* ============================================
-   다크/라이트 모드 CSS 변수 시스템
+   CSS 변수 시스템
    ============================================ */
 
 :root {
@@ -20,53 +20,21 @@
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
-  
+
   /* 메인 그라디언트 (다크 테마 베이스 - 메인 페이지용) */
   --hero-from: #0f172a;
   --hero-via: #172554;
   --hero-to: #0f172a;
-  
-  /* 서브 페이지 (라이트 베이스) */
+
+  /* 서브 페이지 */
   --page-from: #ecfdf5;
   --page-via: #ffffff;
   --page-to: #f0fdfa;
-  
+
   /* 상담 예약 페이지 */
   --layout-from: #eff6ff;
   --layout-via: #ffffff;
   --layout-to: #eef2ff;
-}
-
-[data-theme="dark"] {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --card-bg: rgba(255, 255, 255, 0.05);
-  --card-border: rgba(255, 255, 255, 0.1);
-  --card-hover: rgba(255, 255, 255, 0.08);
-  --muted-bg: rgba(255, 255, 255, 0.05);
-  --muted-fg: #9ca3af;
-  --input-bg: rgba(255, 255, 255, 0.1);
-  --input-border: rgba(255, 255, 255, 0.2);
-  --input-focus: #22d3ee;
-  --modal-overlay: rgba(0, 0, 0, 0.7);
-  --success: #34d399;
-  --danger: #f87171;
-  --warning: #fbbf24;
-  
-  /* 메인 그라디언트 동일 유지 */
-  --hero-from: #0f172a;
-  --hero-via: #172554;
-  --hero-to: #0f172a;
-
-  /* 서브 페이지 (다크 베이스) */
-  --page-from: #0f172a;
-  --page-via: #111827;
-  --page-to: #0f172a;
-  
-  /* 상담 예약 페이지 */
-  --layout-from: #0f172a;
-  --layout-via: #111827;
-  --layout-to: #0f172a;
 }
 
 @theme inline {
@@ -80,173 +48,6 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* ============================================
-   다크 모드 대응 - 서브 페이지 공통
-   ============================================ */
-
-/* 알림장 페이지 다크 모드 */
-[data-theme="dark"] .notice-page {
-  background: linear-gradient(135deg, var(--page-from), var(--page-via), var(--page-to));
-}
-
-[data-theme="dark"] .notice-page .bg-white {
-  background-color: var(--card-bg) !important;
-  border-color: var(--card-border) !important;
-}
-
-[data-theme="dark"] .notice-page .text-gray-900,
-[data-theme="dark"] .notice-page .text-gray-800 {
-  color: #f1f5f9 !important;
-}
-
-[data-theme="dark"] .notice-page .text-gray-700,
-[data-theme="dark"] .notice-page .text-gray-600 {
-  color: #94a3b8 !important;
-}
-
-[data-theme="dark"] .notice-page .text-gray-500,
-[data-theme="dark"] .notice-page .text-gray-400 {
-  color: #64748b !important;
-}
-
-[data-theme="dark"] .notice-page .border-gray-100,
-[data-theme="dark"] .notice-page .border-gray-200 {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-[data-theme="dark"] .notice-page textarea,
-[data-theme="dark"] .notice-page select,
-[data-theme="dark"] .notice-page input {
-  background-color: var(--input-bg) !important;
-  border-color: var(--input-border) !important;
-  color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .notice-page .bg-gray-50,
-[data-theme="dark"] .notice-page .bg-gray-100 {
-  background-color: var(--muted-bg) !important;
-}
-
-[data-theme="dark"] .notice-page .shadow-md {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2) !important;
-}
-
-/* react-calendar 다크 모드 */
-[data-theme="dark"] .react-calendar {
-  background: transparent !important;
-  color: var(--foreground) !important;
-  border: none !important;
-}
-
-[data-theme="dark"] .react-calendar__navigation button {
-  color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .react-calendar__navigation button:hover {
-  background: var(--card-hover) !important;
-}
-
-[data-theme="dark"] .react-calendar__tile {
-  color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .react-calendar__tile:hover {
-  background: var(--card-hover) !important;
-}
-
-[data-theme="dark"] .react-calendar__tile--now {
-  background: rgba(59, 130, 246, 0.2) !important;
-}
-
-[data-theme="dark"] .react-calendar__tile--active {
-  background: #3b82f6 !important;
-  color: white !important;
-}
-
-[data-theme="dark"] .react-calendar__month-view__weekdays__weekday {
-  color: var(--muted-fg) !important;
-}
-
-/* Layout 컴포넌트 (상담 예약 페이지) 다크 모드 */
-[data-theme="dark"] .layout-page {
-  background: linear-gradient(135deg, var(--layout-from), var(--layout-via), var(--layout-to)) !important;
-}
-
-[data-theme="dark"] .layout-page .bg-white {
-  background-color: var(--card-bg) !important;
-  border-color: var(--card-border) !important;
-}
-
-[data-theme="dark"] .layout-page .text-gray-900 {
-  color: #f1f5f9 !important;
-}
-
-[data-theme="dark"] .layout-page .text-gray-700,
-[data-theme="dark"] .layout-page .text-gray-600 {
-  color: #94a3b8 !important;
-}
-
-[data-theme="dark"] .layout-page .text-gray-500,
-[data-theme="dark"] .layout-page .text-gray-400 {
-  color: #64748b !important;
-}
-
-[data-theme="dark"] .layout-page .bg-gray-50,
-[data-theme="dark"] .layout-page .bg-gray-100 {
-  background-color: var(--muted-bg) !important;
-}
-
-[data-theme="dark"] .layout-page .border-gray-100,
-[data-theme="dark"] .layout-page .border-gray-200,
-[data-theme="dark"] .layout-page .border-gray-300 {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-[data-theme="dark"] .layout-page input,
-[data-theme="dark"] .layout-page textarea,
-[data-theme="dark"] .layout-page select {
-  background-color: var(--input-bg) !important;
-  border-color: var(--input-border) !important;
-  color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .layout-page .shadow-md,
-[data-theme="dark"] .layout-page .shadow-lg {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2) !important;
-}
-
-/* 모달 다크 모드 */
-[data-theme="dark"] .modal-overlay {
-  background-color: var(--modal-overlay) !important;
-}
-
-[data-theme="dark"] .modal-content {
-  background-color: #1e293b !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  color: var(--foreground) !important;
-}
-
-/* prose (마크다운 렌더링) 다크 모드 */
-[data-theme="dark"] .prose {
-  color: #cbd5e1 !important;
-}
-
-[data-theme="dark"] .prose h1,
-[data-theme="dark"] .prose h2,
-[data-theme="dark"] .prose h3,
-[data-theme="dark"] .prose h4 {
-  color: #f1f5f9 !important;
-}
-
-[data-theme="dark"] .prose strong {
-  color: #e2e8f0 !important;
-}
-
-[data-theme="dark"] .prose a {
-  color: #38bdf8 !important;
 }
 
 /* ============================================
@@ -255,12 +56,18 @@ body {
 
 /* 터치 타겟 최소 사이즈 */
 @media (max-width: 640px) {
-  button, a, [role="button"] {
+
+  button,
+  a,
+  [role="button"] {
     min-height: 44px;
   }
-  
-  input, textarea, select {
-    font-size: 16px !important; /* iOS 줌 방지 */
+
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+    /* iOS 줌 방지 */
   }
 }
 
@@ -269,7 +76,7 @@ body {
   .react-calendar {
     font-size: 0.85rem;
   }
-  
+
   .react-calendar__tile {
     padding: 0.5em 0.25em !important;
   }

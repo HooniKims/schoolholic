@@ -7,6 +7,7 @@ import {
     updatePassword,
     reauthenticateWithCredential,
     EmailAuthProvider,
+    deleteUser,
     User,
 } from 'firebase/auth';
 import {
@@ -14,6 +15,7 @@ import {
     setDoc,
     getDoc,
     updateDoc,
+    deleteDoc,
     query,
     collection,
     where,
@@ -296,4 +298,28 @@ export async function getMatchedParents(teacherUid: string): Promise<ParentProfi
 
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => doc.data() as ParentProfile);
+}
+
+// ============================================================
+// 회원 탈퇴
+// ============================================================
+
+/** 회원 탈퇴 (Firebase Auth 사용자 삭제 + Firestore 프로필 삭제) */
+export async function deleteAccount(): Promise<void> {
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error('로그인된 사용자가 없습니다.');
+    }
+
+    const uid = user.uid;
+
+    // Firestore 프로필 문서 삭제
+    try {
+        await deleteDoc(doc(db, 'users', uid));
+    } catch (error) {
+        console.error('Firestore 프로필 삭제 오류:', error);
+    }
+
+    // Firebase Auth 사용자 삭제
+    await deleteUser(user);
 }

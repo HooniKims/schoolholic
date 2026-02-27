@@ -1,14 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Settings, Users, MessageCircle, CalendarPlus, LogIn, LogOut, User, Shield, Key } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
-import ThemeToggle from '@/components/ThemeToggle';
+import UserProfileModal from '@/components/UserProfileModal';
+import { deleteAccount } from '@/lib/auth-firebase';
 
 export default function Home() {
   const { user, profile, loading, logout } = useAuth();
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const handleLogout = async () => {
+    await logout();
+  };
+
+  const handleDeleteAccount = async () => {
+    await deleteAccount();
     await logout();
   };
 
@@ -24,13 +32,18 @@ export default function Home() {
       <div className="relative max-w-5xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         {/* Auth Header Bar */}
         <div className="flex items-center justify-end gap-3 mb-8">
-          <ThemeToggle />
           {loading ? (
             <div className="w-5 h-5 border-2 border-cyan-400/40 border-t-cyan-400 rounded-full animate-spin" />
           ) : user && profile ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full">
-                <User className="w-4 h-4 text-cyan-400" />
+                <button
+                  onClick={() => setShowProfileModal(true)}
+                  className="flex items-center gap-0 hover:opacity-80 transition-opacity cursor-pointer"
+                  title="내 정보"
+                >
+                  <User className="w-4 h-4 text-cyan-400" />
+                </button>
                 <span className="text-sm text-white/80">{profile.name}</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs ${profile.role === 'teacher' ? 'bg-emerald-500/20 text-emerald-300' :
                   profile.role === 'admin' ? 'bg-amber-500/20 text-amber-300' :
@@ -183,6 +196,16 @@ export default function Home() {
           © 2026 스쿨홀릭. Powered by HooniKim
         </p>
       </div>
+
+      {/* 프로필 모달 */}
+      {profile && (
+        <UserProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          profile={profile}
+          onDeleteAccount={handleDeleteAccount}
+        />
+      )}
     </div>
   );
 }
