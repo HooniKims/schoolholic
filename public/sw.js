@@ -54,8 +54,8 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             fetch(event.request)
                 .then((response) => {
-                    // 성공 응답을 캐시에 저장
-                    if (response.status === 200) {
+                    // 성공 응답을 캐시에 저장 (http/https 프로토콜만 지원)
+                    if (response.status === 200 && (event.request.url.startsWith('http'))) {
                         const responseClone = response.clone();
                         caches.open(CACHE_NAME).then((cache) => {
                             cache.put(event.request, responseClone);
