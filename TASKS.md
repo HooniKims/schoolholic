@@ -70,10 +70,10 @@
 - [x] 상담 예약 시스템 교사별 개별 시간표 분리 기능 연동 수정 (하드코딩 제거 및 UID 연동)
 - [x] 학부모 예약 페이지 해당 담임 교사 시간표 자동 매칭 연동 적용
 - [x] `feature/auth-system` 브랜치로 깃허브 업로드 및 Netlify 브랜치 배포
+- [x] `feature/auth-system` 브랜치를 `main`으로 병합(Merge) 및 테스트 브랜치 삭제 완료
 
 ## 예정된 작업
 - [ ] Firebase Console 설정 (Authentication 활성화, Firestore 규칙)
-- [ ] `feature/auth-system` → `main` 머지 (테스트 완료 후)
 - [ ] Vercel 배포
 - [ ] 환경 변수 Vercel에 설정 (.env.local 내용 기반)
 - [ ] 통합 테스트 (알림장 + 상담 예약 동시 기능 연동 확인)
