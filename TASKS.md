@@ -52,7 +52,7 @@
 - [x] 알림장 AI를 Upstage Solar Mini → 로컬 LLM (Ollama) 으로 전환
   - [x] notice-ai.ts: OpenAI SDK → 브라우저 직접 fetch (api.alluser.site 프록시)
   - [x] 자동 재시도 로직, 텍스트 후처리, Sandwich 기법 적용
-  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가
+  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가 (Qwen, Gemma, Llama, **GLM-4.7-Flash** 등)
   - [x] 환경변수 NEXT_PUBLIC_UPSTAGE_API_KEY → NEXT_PUBLIC_OLLAMA_API_KEY 변경
 - [x] 로그인/인증 시스템 구현
   - [x] Firebase Authentication 설정 (이메일/비밀번호 + Google 소셜 로그인)
@@ -64,8 +64,16 @@
   - [x] 관리자 페이지 (계정 잠금 해제)
   - [x] 로그인 10회 실패 시 계정 잠금 기능
   - [x] 메인 페이지에 로그인/로그아웃 UI 통합
+  - [x] 기존 하드코딩 비밀번호 인증 제거 → Firebase Auth로 통합
+  - [x] 비로그인 시 보호 페이지(`/notice/teacher`, `/notice/parents`, `/teacher`, `/parent`) 접근 차단 → `/login`으로 리다이렉트
+  - [x] Firebase 빌드 타임 초기화 오류 해결 (try-catch 방식)
+- [x] 상담 예약 시스템 교사별 개별 시간표 분리 기능 연동 수정 (하드코딩 제거 및 UID 연동)
+- [x] 학부모 예약 페이지 해당 담임 교사 시간표 자동 매칭 연동 적용
+- [x] `feature/auth-system` 브랜치로 깃허브 업로드 및 Netlify 브랜치 배포
 
 ## 예정된 작업
+- [ ] Firebase Console 설정 (Authentication 활성화, Firestore 규칙)
+- [ ] `feature/auth-system` → `main` 머지 (테스트 완료 후)
 - [ ] Vercel 배포
 - [ ] 환경 변수 Vercel에 설정 (.env.local 내용 기반)
 - [ ] 통합 테스트 (알림장 + 상담 예약 동시 기능 연동 확인)

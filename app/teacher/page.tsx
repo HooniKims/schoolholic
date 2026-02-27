@@ -19,9 +19,8 @@ export default function TeacherPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  const [teacherId] = useState(
-    process.env.NEXT_PUBLIC_TEACHER_ID || 'default_teacher_id'
-  );
+  // 로그인한 교사의 ID 사용
+  const teacherId = user?.uid;
 
   const [periods, setPeriods] = useState<Period[]>(DEFAULT_PERIODS);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);

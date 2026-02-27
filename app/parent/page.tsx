@@ -87,6 +87,7 @@ export default function ParentPage() {
 type Step = 1 | 2 | 3;
 
 function BookingTab() {
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>(1);
   const [studentNumber, setStudentNumber] = useState('');
   const [studentName, setStudentName] = useState('');
@@ -107,28 +108,28 @@ function BookingTab() {
     cancelText: null as string | null,
   });
 
-  // 교사 ID 조회를 위해 예약 가능한 슬롯을 하나만 가져옵니다.
+  // 로그인한 학부모 프로필에서 매칭된 교사 ID(matchedTeacherId)를 가져옵니다.
   useEffect(() => {
-    const fetchTeacherIdFromSlots = async () => {
-      try {
-        // status가 'available'인 슬롯을 1개만 쿼리하여 teacherId를 효율적으로 찾습니다.
-        const q = query(
-          collection(db, 'availableSlots'),
-          where('status', '==', 'available'),
-          limit(1)
-        );
-        const snapshot = await getDocs(q);
+    const fetchMatchedTeacherId = async () => {
+      if (!user?.uid) return;
 
-        if (!snapshot.empty) {
-          const slot = snapshot.docs[0].data();
-          setTeacherId(slot.teacherId);
+      try {
+        const userDoc = await getDocs(
+          query(collection(db, 'users'), where('uid', '==', user.uid))
+        );
+
+        if (!userDoc.empty) {
+          const userData = userDoc.docs[0].data();
+          if (userData.matchedTeacherId) {
+            setTeacherId(userData.matchedTeacherId);
+          }
         }
       } catch (error) {
-        console.error('Error fetching teacherId from slots:', error);
+        console.error('Error fetching matched teacherId:', error);
       }
     };
-    fetchTeacherIdFromSlots();
-  }, []);
+    fetchMatchedTeacherId();
+  }, [user]);
 
   useEffect(() => {
     if (!teacherId) return;
