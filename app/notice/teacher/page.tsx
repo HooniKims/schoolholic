@@ -50,7 +50,7 @@ export default function NoticeTeacherPage() {
 
             try {
                 const dateStr = format(date, 'yyyy-MM-dd');
-                const data = await getNoteByDate(dateStr);
+                const data = await getNoteByDate(dateStr, user.uid);
                 if (data) {
                     setNote(data.originalContent || '');
                     setSummary(data.summary || '');
@@ -99,7 +99,7 @@ export default function NoticeTeacherPage() {
         setIsSaving(true);
         try {
             const dateStr = format(date, 'yyyy-MM-dd');
-            await saveNote(dateStr, note, summary);
+            await saveNote(dateStr, note, summary, user.uid);
             setStatusMsg('성공적으로 저장되었습니다!');
             setTimeout(() => setStatusMsg(''), 3000);
         } catch (err) {
@@ -116,7 +116,7 @@ export default function NoticeTeacherPage() {
         setIsSaving(true);
         try {
             const dateStr = format(date, 'yyyy-MM-dd');
-            await deleteNote(dateStr);
+            await deleteNote(dateStr, user.uid);
             setNote('');
             setSummary('');
             setStatusMsg('삭제되었습니다.');
@@ -134,7 +134,7 @@ export default function NoticeTeacherPage() {
         setShowList(true);
         setIsFetching(true);
         try {
-            const notes = await getAllNotes();
+            const notes = await getAllNotes(user.uid);
             const validNotes = notes.filter((n) => n.date);
             setNoteList(validNotes);
             setSelectedNotes(new Set());
@@ -176,10 +176,10 @@ export default function NoticeTeacherPage() {
 
         setIsFetching(true);
         try {
-            const deletePromises = Array.from(selectedNotes).map((dateStr) => deleteNote(dateStr));
+            const deletePromises = Array.from(selectedNotes).map((dateStr) => deleteNote(dateStr, user.uid));
             await Promise.all(deletePromises);
 
-            const notes = await getAllNotes();
+            const notes = await getAllNotes(user.uid);
             const validNotes = notes.filter((n) => n.date);
             setNoteList(validNotes);
             setSelectedNotes(new Set());
@@ -210,7 +210,7 @@ export default function NoticeTeacherPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        <div className="notice-page min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 transition-colors duration-300">
             <div className="max-w-6xl mx-auto px-4 py-8">
                 <div className="mb-6 flex items-center justify-between">
                     <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">

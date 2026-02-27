@@ -11,6 +11,8 @@
   - 기본 폰트: 가독성을 높인 **Pretendard** 적용
   - 다크 테마 기반 글래스모피즘(Glassmorphism)
   - 직관적인 이모지 타이틀 및 인터랙티브 호버 애니메이션(Hover Glow & Translate) 적용
+  - **다크/라이트 모드 토글 지원** (CSS 변수 + data-theme 기반)
+  - **PWA 지원** (manifest.json + Service Worker + 오프라인 캐싱)
 
 ## 라우트 구조
 | 경로 | 설명 |
@@ -27,6 +29,7 @@
 | `/parent` | 상담 예약 - 학부모용 (예약/조회/취소) |
 | `/booking/[teacherId]` | 상담 예약 - 교사 링크 직접 접근 |
 | `/check-reservation` | 상담 예약 조회 및 취소 |
+| `/api/auth/check-lock` | 서버 사이드 로그인 잠금 검증 API |
 
 ## 완료된 작업
 - [x] 깃허브 레포지토리 복제 (schoolalarm, counseling-reservation)
@@ -71,9 +74,33 @@
 - [x] 학부모 예약 페이지 해당 담임 교사 시간표 자동 매칭 연동 적용
 - [x] `feature/auth-system` 브랜치로 깃허브 업로드 및 Netlify 브랜치 배포
 - [x] `feature/auth-system` 브랜치를 `main`으로 병합(Merge) 및 테스트 브랜치 삭제 완료
+- [x] 통합 테스트 (알림장 + 상담 예약 동시 기능 연동 확인)
+  - [x] 알림장 데이터 교사별 분리 (`notice-firebase.ts` → 문서 ID: `{teacherUid}_{dateStr}`)
+  - [x] 학부모 알림장 조회 시 `matchedTeacherId` 기반 교사 알림장만 표시
+  - [x] 교사 미매칭 학부모에게 안내 메시지 표시
+- [x] 로그인 잠금 로직 서버 사이드 검증(Next API)으로 강화
+  - [x] `/api/auth/check-lock` API Route 생성 (Firestore REST API 기반)
+  - [x] `auth-firebase.ts`에서 잠금 확인/실패 횟수 관리를 서버 API 호출로 전환
+- [x] 다크 모드 지원
+  - [x] CSS 변수 기반 다크/라이트 모드 시스템 (`globals.css`)
+  - [x] `ThemeToggle.tsx` 컴포넌트 (localStorage + 시스템 설정 fallback)
+  - [x] FOUC 방지 테마 초기화 스크립트 (`layout.tsx`)
+  - [x] 알림장, 상담 예약, 메인 페이지 등 전체 다크 모드 대응
+  - [x] react-calendar, prose 마크다운 등 서드파티 컴포넌트 다크 모드
+- [x] 모바일 반응형 최적화
+  - [x] `Layout.tsx` 모바일 반응형 패딩/폰트 사이즈 개선
+  - [x] 터치 타겟 최소 44px 보장 (CSS)
+  - [x] iOS 줌 방지 (input 16px 고정)
+  - [x] Safe Area Inset 지원 (노치 디바이스)
+  - [x] 캘린더 모바일 최적화
+- [x] PWA 지원
+  - [x] `public/manifest.json` 생성 (아이콘, 테마, 시작 URL)
+  - [x] `public/sw.js` Service Worker (네트워크 우선 캐싱, 오프라인 fallback, 푸시 알림 수신)
+  - [x] `public/icons/` PWA 아이콘 세트 (72~512px)
+  - [x] `layout.tsx`에 manifest 링크, Service Worker 등록 스크립트 추가
+  - [x] `next.config.ts`에 SW 스코프 헤더 설정
 
 ## 예정된 작업
 - [ ] Firebase Console 설정 (Authentication 활성화, Firestore 규칙)
 - [ ] Vercel 배포
 - [ ] 환경 변수 Vercel에 설정 (.env.local 내용 기반)
-- [ ] 통합 테스트 (알림장 + 상담 예약 동시 기능 연동 확인)

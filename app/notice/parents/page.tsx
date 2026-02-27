@@ -5,19 +5,23 @@ import ReactCalendar from 'react-calendar';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
-import { MessageCircle, ArrowLeft } from 'lucide-react';
+import { MessageCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import 'react-calendar/dist/Calendar.css';
 import { getNoteByDate } from '@/lib/notice-firebase';
 import { useAuth } from '@/components/AuthContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function NoticeParentsPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, profile, loading: authLoading } = useAuth();
     const router = useRouter();
     const [date, setDate] = useState<Date>(new Date());
     const [summary, setSummary] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [matchedTeacherId, setMatchedTeacherId] = useState<string | null>(null);
+    const [matchLoading, setMatchLoading] = useState(true);
 
     // 로그인 안 된 상태면 로그인 페이지로 이동
     useEffect(() => {
@@ -26,8 +30,36 @@ export default function NoticeParentsPage() {
         }
     }, [authLoading, user, router]);
 
+    // 매칭된 교사 ID 가져오기
     useEffect(() => {
-        if (!user) return;
+        const fetchMatchedTeacherId = async () => {
+            if (!user?.uid) return;
+
+            try {
+                const userDoc = await getDocs(
+                    query(collection(db, 'users'), where('uid', '==', user.uid))
+                );
+
+                if (!userDoc.empty) {
+                    const userData = userDoc.docs[0].data();
+                    setMatchedTeacherId(userData.matchedTeacherId || null);
+                }
+            } catch (error) {
+                console.error('Error fetching matched teacherId:', error);
+            } finally {
+                setMatchLoading(false);
+            }
+        };
+
+        fetchMatchedTeacherId();
+    }, [user]);
+
+    useEffect(() => {
+        if (!user || matchLoading) return;
+
+        // 교사 역할이면 자신의 알림장을 봄
+        const teacherUid = profile?.role === 'teacher' ? user.uid : matchedTeacherId;
+        if (!teacherUid) return;
 
         const loadNote = async () => {
             setIsLoading(true);
@@ -35,7 +67,7 @@ export default function NoticeParentsPage() {
 
             try {
                 const dateStr = format(date, 'yyyy-MM-dd');
-                const data = await getNoteByDate(dateStr);
+                const data = await getNoteByDate(dateStr, teacherUid);
                 if (data && data.summary) {
                     setSummary(data.summary);
                 }
@@ -47,10 +79,10 @@ export default function NoticeParentsPage() {
         };
 
         loadNote();
-    }, [date, user]);
+    }, [date, user, matchedTeacherId, matchLoading, profile]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        <div className="notice-page min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 transition-colors duration-300">
             <div className="max-w-5xl mx-auto px-4 py-8">
                 <div className="mb-6 flex items-center justify-between">
                     <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
@@ -59,6 +91,19 @@ export default function NoticeParentsPage() {
                     <h1 className="text-2xl font-bold text-gray-900">📋 알림장</h1>
                     <div />
                 </div>
+
+                {/* 매칭 안 된 경우 안내 */}
+                {!matchLoading && !matchedTeacherId && profile?.role === 'parent' && (
+                    <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                        <div>
+                            <p className="font-medium text-amber-800">담임 교사와 매칭되지 않았습니다.</p>
+                            <p className="text-sm text-amber-700 mt-1">
+                                같은 학교·학년·반으로 등록된 교사가 아직 없습니다. 교사가 가입한 후 자동으로 매칭됩니다.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Calendar */}

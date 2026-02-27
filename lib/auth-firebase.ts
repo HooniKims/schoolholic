@@ -82,15 +82,30 @@ export async function createUserProfile(
 // 로그인
 // ============================================================
 
-/** 이메일/비밀번호로 로그인 (실패 횟수 추적 포함) */
+/** 서버 사이드 잠금 확인 API 호출 */
+async function serverCheckLock(email: string, action: 'check' | 'increment' | 'reset') {
+    try {
+        const res = await fetch('/api/auth/check-lock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, action }),
+        });
+        if (!res.ok) return { isLocked: false, failedAttempts: 0 };
+        return res.json();
+    } catch {
+        return { isLocked: false, failedAttempts: 0 };
+    }
+}
+
+/** 이메일/비밀번호로 로그인 (서버 사이드 잠금 검증) */
 export async function signInWithEmail(
     email: string,
     password: string
 ): Promise<{ user: User; profile: UserProfile }> {
-    // 먼저 이메일로 사용자 프로필 찾기 (잠금 확인)
-    const profileByEmail = await getUserProfileByEmail(email);
+    // 서버 사이드에서 잠금 상태 확인
+    const lockStatus = await serverCheckLock(email, 'check');
 
-    if (profileByEmail?.isLocked) {
+    if (lockStatus.isLocked) {
         throw new Error('ACCOUNT_LOCKED');
     }
 
@@ -98,13 +113,8 @@ export async function signInWithEmail(
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // 로그인 성공 → 실패 횟수 초기화
-        if (profileByEmail) {
-            await updateDoc(doc(db, 'users', user.uid), {
-                failedLoginAttempts: 0,
-                updatedAt: serverTimestamp(),
-            });
-        }
+        // 로그인 성공 → 서버에서 실패 횟수 초기화
+        await serverCheckLock(email, 'reset');
 
         const profile = await getUserProfile(user.uid);
         if (!profile) {
@@ -120,13 +130,14 @@ export async function signInWithEmail(
             throw error;
         }
 
-        // 잘못된 비밀번호 → 실패 횟수 증가
+        // 잘못된 비밀번호 → 서버에서 실패 횟수 증가
         if (
             firebaseError.code === 'auth/wrong-password' ||
             firebaseError.code === 'auth/invalid-credential'
         ) {
-            if (profileByEmail) {
-                await incrementFailedAttempts(profileByEmail.uid);
+            const result = await serverCheckLock(email, 'increment');
+            if (result.isLocked) {
+                throw new Error('ACCOUNT_LOCKED');
             }
         }
 
