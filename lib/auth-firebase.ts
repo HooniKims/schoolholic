@@ -212,18 +212,21 @@ export async function changePassword(
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     const docSnap = await getDoc(doc(db, 'users', uid));
     if (!docSnap.exists()) return null;
-    
+
     const profile = docSnap.data() as UserProfile;
-    
+
     // 학부모 로그인 시 선생님이 나중에 가입했을 경우를 대비해 매칭 자동 갱신
-    if (profile.role === 'parent' && !profile.matchedTeacherId && profile.schoolCode) {
-        const tid = await matchTeacher(profile.schoolCode, profile.grade, profile.classNum);
-        if (tid) {
-            await updateDoc(doc(db, 'users', uid), { matchedTeacherId: tid });
-            profile.matchedTeacherId = tid;
+    if (profile.role === 'parent' && profile.schoolCode) {
+        const parentProfile = profile as ParentProfile;
+        if (!parentProfile.matchedTeacherId) {
+            const tid = await matchTeacher(profile.schoolCode, profile.grade, profile.classNum);
+            if (tid) {
+                await updateDoc(doc(db, 'users', uid), { matchedTeacherId: tid });
+                parentProfile.matchedTeacherId = tid;
+            }
         }
     }
-    
+
     return profile;
 }
 
