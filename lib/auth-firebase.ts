@@ -291,7 +291,7 @@ export async function matchTeacher(
 
     const q = query(
         collection(db, 'users'),
-        where('role', '==', 'teacher'),
+        where('role', 'in', ['teacher', 'admin']),
         where('schoolCode', '==', schoolCode),
         where('grade', '==', grade),
         where('classNum', '==', classNum)

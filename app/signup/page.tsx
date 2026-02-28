@@ -27,6 +27,7 @@ function SignUpForm() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [name, setName] = useState(googleName);
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // 학교 정보
     const [schoolName, setSchoolName] = useState('');
@@ -332,13 +333,20 @@ function SignUpForm() {
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
                                         <input
-                                            type="password"
+                                            type={showConfirmPassword ? 'text' : 'password'}
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             placeholder="비밀번호 재입력"
                                             required
-                                            className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 transition-all"
+                                            className="w-full pl-11 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 transition-all"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
                                     </div>
                                 </div>
                             </>
