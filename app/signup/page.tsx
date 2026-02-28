@@ -138,8 +138,14 @@ function SignUpForm() {
             }
         } catch (err: unknown) {
             const firebaseError = err as { code?: string };
-            if (firebaseError.code !== 'auth/popup-closed-by-user') {
-                setError('Google 로그인에 실패했습니다.');
+            if (firebaseError.code === 'auth/popup-closed-by-user' || firebaseError.code === 'auth/cancelled-popup-request') {
+                // Ignore user closing the popup
+            } else if (firebaseError.code === 'auth/operation-not-allowed') {
+                setError('Google 로그인 기능이 비활성화되어 있습니다. Firebase 콘솔에서 설정을 켜주세요.');
+            } else if (firebaseError.code === 'auth/popup-blocked') {
+                setError('팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.');
+            } else {
+                setError(`Google 로그인에 실패했습니다. (${firebaseError.code || '알 수 없는 오류'})`);
             }
         } finally {
             setLoading(false);

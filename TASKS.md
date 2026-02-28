@@ -99,6 +99,9 @@
   - [x] `next.config.ts`에 SW 스코프 헤더 설정
 
 ## 예정된 작업
+- [x] 교사와 학부모 매칭 누락 문제 해결 (가입 순서 무관 매칭 또는 로그인 시 매칭 갱신 등)
+- [x] 구글 계정으로 가입/로그인 시 오류('Google 로그인에 실패했습니다') 문제 해결
+- [x] 학부모 알림장 조회 시 AI 요약본이 존재하면 원본 대신 요약본만 표출되도록 수정
 - [ ] Firebase Console 설정 (Authentication 활성화, Firestore 규칙)
 - [ ] Vercel 배포
 - [ ] 환경 변수 Vercel에 설정 (.env.local 내용 기반)

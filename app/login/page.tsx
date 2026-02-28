@@ -64,10 +64,14 @@ export default function LoginPage() {
 
             if (firebaseError.message === 'ACCOUNT_LOCKED') {
                 setError('계정이 잠겼습니다. 관리자에게 문의하세요.');
-            } else if (firebaseError.code === 'auth/popup-closed-by-user') {
+            } else if (firebaseError.code === 'auth/popup-closed-by-user' || firebaseError.code === 'auth/cancelled-popup-request') {
                 // 사용자가 팝업을 닫은 경우 — 에러 메시지 불필요
+            } else if (firebaseError.code === 'auth/operation-not-allowed') {
+                setError('Google 로그인 기능이 비활성화되어 있습니다. Firebase 콘솔에서 설정을 켜주세요.');
+            } else if (firebaseError.code === 'auth/popup-blocked') {
+                setError('팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.');
             } else {
-                setError('Google 로그인에 실패했습니다.');
+                setError(`Google 로그인에 실패했습니다. (${firebaseError.code || '알 수 없는 오류'})`);
             }
         } finally {
             setLoading(false);

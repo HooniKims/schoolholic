@@ -68,8 +68,8 @@ export default function NoticeParentsPage() {
             try {
                 const dateStr = format(date, 'yyyy-MM-dd');
                 const data = await getNoteByDate(dateStr, teacherUid);
-                if (data && data.summary) {
-                    setSummary(data.summary);
+                if (data) {
+                    setSummary(data.summary || data.originalContent || '');
                 }
             } catch (err) {
                 console.error(err);
