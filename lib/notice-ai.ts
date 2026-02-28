@@ -5,7 +5,7 @@ const OLLAMA_API_KEY = process.env.NEXT_PUBLIC_OLLAMA_API_KEY || "";
 export const AVAILABLE_MODELS = [
     { id: "gemma3:4b-it-q4_K_M", name: "Gemma 3 4B (추천)", description: "경량 (3.3GB)" },
     { id: "qwen3:8b", name: "Qwen 3 8B (균형 잡힌 성능)", description: "균형 잡힌 성능" },
-    { id: "glm-4.7-flash", name: "GLM-4.7-Flash (초경량 빠른 응답)", description: "초경량 빠른 응답" },
+    { id: "glm-4.7-flash", name: "GLM-4.7-Flash (고성능 고품질 모델)", description: "고성능 고품질 모델" },
     { id: "gemma3:12b-it-q8_0", name: "Gemma 3 12B Q8 (최고 품질, 13GB)", description: "최고 품질 (13GB)" },
     { id: "gemma3:12b-it-q4_K_M", name: "Gemma 3 12B Q4 (고품질, 8GB)", description: "고품질 (8GB)" },
     { id: "qwen3:4b", name: "Qwen 3 4B (경량 빠른 응답)", description: "경량 빠른 응답" },
