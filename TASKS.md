@@ -54,7 +54,7 @@
 - [x] 알림장 AI를 Upstage Solar Mini → 로컬 LLM (Ollama) 으로 전환
   - [x] notice-ai.ts: OpenAI SDK → 브라우저 직접 fetch (api.alluser.site 프록시)
   - [x] 자동 재시도 로직, 텍스트 후처리, Sandwich 기법 적용
-  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가 (Qwen, Gemma, Llama, **GLM-4.7-Flash** 등)
+  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가 (Gemma 3 4B 기본값, Qwen, Llama, **GLM-4.7-Flash** 등 모델별 특징 표기)
   - [x] 환경변수 NEXT_PUBLIC_UPSTAGE_API_KEY → NEXT_PUBLIC_OLLAMA_API_KEY 변경
 - [x] 로그인/인증 시스템 구현
   - [x] Firebase Authentication 설정 (이메일/비밀번호 + Google 소셜 로그인)
