@@ -5,6 +5,7 @@ import ReactCalendar from 'react-calendar';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { MessageCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -136,7 +137,16 @@ export default function NoticeParentsPage() {
                                 </div>
                             ) : summary ? (
                                 <div className="prose prose-sm max-w-none">
-                                    <ReactMarkdown>{summary}</ReactMarkdown>
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            a: ({ node, ...props }) => (
+                                                <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 underline" />
+                                            )
+                                        }}
+                                    >
+                                        {summary}
+                                    </ReactMarkdown>
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">

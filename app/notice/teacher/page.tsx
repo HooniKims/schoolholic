@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Sparkles, Save, Trash2, Loader2, List, X, CheckSquare, Square, ArrowLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import 'react-calendar/dist/Calendar.css';
@@ -296,7 +297,16 @@ export default function NoticeTeacherPage() {
                                         />
                                     ) : (
                                         <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 min-h-[200px] overflow-y-auto max-h-[400px] prose prose-sm max-w-none">
-                                            <ReactMarkdown>{summary}</ReactMarkdown>
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm]}
+                                                components={{
+                                                    a: ({ node, ...props }) => (
+                                                        <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 underline" />
+                                                    )
+                                                }}
+                                            >
+                                                {summary}
+                                            </ReactMarkdown>
                                         </div>
                                     )}
                                 </div>

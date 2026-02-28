@@ -40,9 +40,13 @@ export default function UserProfileModal({
         try {
             await onDeleteAccount();
             setStep('complete');
-        } catch (error) {
+        } catch (error: any) {
             console.error('회원 탈퇴 오류:', error);
-            alert('회원 탈퇴에 실패했습니다. 다시 시도해주세요.');
+            if (error?.code === 'auth/requires-recent-login' || error?.message?.includes('requires-recent-login')) {
+                alert('보안을 위해 로그아웃 후 다시 로그인한 다음 탈퇴를 진행해주세요.');
+            } else {
+                alert('회원 탈퇴에 실패했습니다. 다시 시도해주세요.');
+            }
             setIsDeleting(false);
         }
     };

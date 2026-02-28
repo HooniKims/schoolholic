@@ -328,13 +328,27 @@ export async function deleteAccount(): Promise<void> {
 
     const uid = user.uid;
 
-    // Firestore 프로필 문서 삭제
+    // 백업: deleteUser가 실패할 경우를 대비
+    const profileSnap = await getDoc(doc(db, 'users', uid));
+    const profileData = profileSnap.data();
+
+    // Firestore 프로필 문서 임시 삭제
     try {
         await deleteDoc(doc(db, 'users', uid));
     } catch (error) {
         console.error('Firestore 프로필 삭제 오류:', error);
+        throw error;
     }
 
-    // Firebase Auth 사용자 삭제
-    await deleteUser(user);
+    try {
+        // Firebase Auth 사용자 삭제
+        await deleteUser(user);
+    } catch (error: any) {
+        // 복구 시도
+        if (profileData) {
+            await setDoc(doc(db, 'users', uid), profileData);
+        }
+        console.error('Firebase Auth 사용자 삭제 오류 (복구됨):', error);
+        throw error;
+    }
 }

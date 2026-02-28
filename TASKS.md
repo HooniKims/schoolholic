@@ -84,6 +84,7 @@
 - [x] 회원 탈퇴 기능
   - [x] `UserProfileModal.tsx` 컴포넌트 (아이디, 가입일 표시 + 3단계 탈퇴 확인 플로우)
   - [x] `auth-firebase.ts`에 `deleteAccount()` 함수 (Firebase Auth + Firestore 프로필 삭제)
+  - [x] 탈퇴 실패 시 Firestore 프로필 문서 복구(Rollback) 및 재로그인 안내 로직 보강
   - [x] 메인 페이지 사람 아이콘 클릭 → 프로필 팝업 연동
 - [x] 모바일 반응형 최적화
   - [x] `Layout.tsx` 모바일 반응형 패딩/폰트 사이즈 개선
