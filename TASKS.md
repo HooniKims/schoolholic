@@ -80,6 +80,7 @@
 - [x] 로그인 잠금 로직 서버 사이드 검증(Next API)으로 강화
   - [x] `/api/auth/check-lock` API Route 생성 (Firestore REST API 기반)
   - [x] `auth-firebase.ts`에서 잠금 확인/실패 횟수 관리를 서버 API 호출로 전환
+- [x] 알림장 전체 목록 조회 시 복합 인덱스 오류(Firestore Index Error) 해결 (클라이언트 단 정렬로 우회)
 - [x] ~~다크 모드 지원~~ → 삭제 완료 (기본 다크 테마 유지, 토글 기능 제거)
 - [x] 회원 탈퇴 기능
   - [x] `UserProfileModal.tsx` 컴포넌트 (아이디, 가입일 표시 + 3단계 탈퇴 확인 플로우)

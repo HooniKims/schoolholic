@@ -64,9 +64,10 @@ export const getAllNotes = async (teacherUid?: string) => {
         let q;
 
         if (teacherUid) {
-            q = query(notesRef, where('teacherUid', '==', teacherUid), orderBy('date', 'desc'));
+            // orderBy를 제거하여 복합 인덱스 오류 방지 (클라이언트에서 정렬)
+            q = query(notesRef, where('teacherUid', '==', teacherUid));
         } else {
-            q = query(notesRef, orderBy('date', 'desc'));
+            q = query(notesRef);
         }
 
         const querySnapshot = await getDocs(q);
@@ -75,7 +76,9 @@ export const getAllNotes = async (teacherUid?: string) => {
         querySnapshot.forEach((docSnap) => {
             notes.push(docSnap.data() as { date: string; originalContent?: string; summary?: string; updatedAt?: string; teacherUid?: string });
         });
-        return notes;
+
+        // 최신 날짜순 정렬 (클라이언트 단 수행)
+        return notes.sort((a, b) => b.date.localeCompare(a.date));
     } catch (error) {
         console.error("Error getting all notes:", error);
         throw error;
