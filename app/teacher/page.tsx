@@ -11,7 +11,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ConfirmModal from '@/components/ConfirmModal';
 import { Period, AvailableSlot, Reservation, DEFAULT_PERIODS } from '@/types';
 import { formatDate, formatDateKorean, generateId } from '@/lib/utils';
-import { Clock, Trash2, Settings, Calendar as CalendarIcon, Download, X } from 'lucide-react';
+import { Clock, Trash2, Settings, Calendar as CalendarIcon, Download, X, Home } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/components/AuthContext';
 
@@ -314,8 +314,16 @@ export default function TeacherPage() {
   return (
     <Layout title="상담 예약 관리" description="상담 가능한 날짜와 시간을 설정하고 예약 현황을 확인하세요">
       <div className="p-6 sm:p-8">
-        {/* 교시 설정 버튼 */}
-        <div className="mb-6">
+        {/* 상단 버튼들 */}
+        <div className="mb-6 flex gap-3 flex-wrap">
+          <Button
+            onClick={() => router.push('/')}
+            variant="secondary"
+            size="sm"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            메인으로
+          </Button>
           <Button
             onClick={() => setShowSettings(!showSettings)}
             variant="secondary"
