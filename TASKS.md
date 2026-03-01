@@ -54,7 +54,7 @@
 - [x] 알림장 AI를 Upstage Solar Mini → 로컬 LLM (Ollama) 으로 전환
   - [x] notice-ai.ts: OpenAI SDK → 브라우저 직접 fetch (api.alluser.site 프록시)
   - [x] 자동 재시도 로직, 텍스트 후처리, Sandwich 기법 적용
-  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가 (Gemma 3 4B 기본값, Qwen, Llama, **GLM-4.7-Flash** 등 모델별 특징 표기)
+  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가 (Gemma 3 4B 기본값, Qwen, Llama 등 모델별 특징 표기)
   - [x] 환경변수 NEXT_PUBLIC_UPSTAGE_API_KEY → NEXT_PUBLIC_OLLAMA_API_KEY 변경
 - [x] 로그인/인증 시스템 구현
   - [x] Firebase Authentication 설정 (이메일/비밀번호 + Google 소셜 로그인)
@@ -99,6 +99,9 @@
   - [x] `public/icons/` PWA 아이콘 세트 (72~512px)
   - [x] `layout.tsx`에 manifest 링크, Service Worker 등록 스크립트 추가
   - [x] `next.config.ts`에 SW 스코프 헤더 설정
+- [x] 콘솔 경고(`Link preload but not used`, `Tracking Prevention`) 분석 및 원인 파악
+- [x] `lib/notice-ai.ts`에서 동작이 불안정한 `GLM-4.7-Flash` 모델 제거
+- [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치)
 
 ## 예정된 작업
 - [x] 교사와 학부모 매칭 누락 문제 해결 (가입 순서 무관 매칭 또는 로그인 시 매칭 갱신 등)
@@ -106,4 +109,3 @@
 - [x] 학부모 알림장 조회 시 AI 요약본이 존재하면 원본 대신 요약본만 표출되도록 수정
 - [ ] Firebase Console 설정 (Authentication 활성화, Firestore 규칙)
 - [ ] Vercel 배포
-- [ ] 환경 변수 Vercel에 설정 (.env.local 내용 기반)
