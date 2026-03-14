@@ -391,7 +391,7 @@ const policyContent: Record<'ko' | 'en', PolicyLocale> = {
     ],
     contactHeading: '11. Privacy Officer and Contact Information',
     contactRows: [
-      { label: 'Privacy officer', value: 'Hyeonghun Kim' },
+      { label: 'Privacy officer', value: 'KIM HYEONG HOON' },
       { label: 'Title', value: 'Teacher at Deungchon Middle School' },
       { label: 'Email', value: 'greenguyhh@gmail.com' },
       { label: 'Phone', value: '070-7005-8012' },
