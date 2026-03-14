@@ -1,185 +1,186 @@
-# 스쿨홀릭 (Schoolholic) - 통합 학교 커뮤니케이션 플랫폼
+﻿# ?ㅼ엥?由?(Schoolholic) - ?듯빀 ?숆탳 而ㅻ??덉??댁뀡 ?뚮옯??
 
-## 프로젝트 개요
-- **프레임워크**: Next.js 16 (App Router) + TypeScript + Tailwind CSS v4
-- **배포 대상**: Vercel
-- **Firebase**: Firestore (알림장 & 상담 예약 데이터) + Authentication (이메일/비밀번호 + Google 로그인)
-  - 기존 데이터베이스 구조와 문서를 그대로 유지 (데이터 손실 없음)
-  - 알림장(`notes`), 교사정보(`teachers`), 상담슬롯(`availableSlots`), 예약정보(`reservations`), 사용자(`users`) 컬렉션 공존
-- **AI**: 로컬 LLM (Ollama via api.alluser.site 프록시, 브라우저 직접 호출)
-- **디자인/UI**: 
-  - 기본 폰트: 가독성을 높인 **Pretendard** 적용
-  - 다크 테마 기반 글래스모피즘(Glassmorphism)
-  - 직관적인 이모지 타이틀 및 인터랙티브 호버 애니메이션(Hover Glow & Translate) 적용
-  - **PWA 지원** (manifest.json + Service Worker + 오프라인 캐싱)
+## ?꾨줈?앺듃 媛쒖슂
+- **?꾨젅?꾩썙??*: Next.js 16 (App Router) + TypeScript + Tailwind CSS v4
+- **諛고룷 ???*: Vercel
+- **Firebase**: Firestore (?뚮┝??& ?곷떞 ?덉빟 ?곗씠?? + Authentication (?대찓??鍮꾨?踰덊샇 + Google 濡쒓렇??
+  - 湲곗〈 ?곗씠?곕쿋?댁뒪 援ъ“? 臾몄꽌瑜?洹몃?濡??좎? (?곗씠???먯떎 ?놁쓬)
+  - ?뚮┝??`notes`), 援먯궗?뺣낫(`teachers`), ?곷떞?щ’(`availableSlots`), ?덉빟?뺣낫(`reservations`), ?ъ슜??`users`) 而щ젆??怨듭〈
+- **AI**: 濡쒖뺄 LLM (Ollama via api.alluser.site ?꾨줉?? 釉뚮씪?곗? 吏곸젒 ?몄텧)
+- **?붿옄??UI**: 
+  - 湲곕낯 ?고듃: 媛?낆꽦???믪씤 **Pretendard** ?곸슜
+  - ?ㅽ겕 ?뚮쭏 湲곕컲 湲?섏뒪紐⑦뵾利?Glassmorphism)
+  - 吏곴??곸씤 ?대え吏 ??댄? 諛??명꽣?숉떚釉??몃쾭 ?좊땲硫붿씠??Hover Glow & Translate) ?곸슜
+  - **PWA 吏??* (manifest.json + Service Worker + ?ㅽ봽?쇱씤 罹먯떛)
 
-## 라우트 구조
-| 경로 | 설명 |
+## ?쇱슦??援ъ“
+| 寃쎈줈 | ?ㅻ챸 |
 |------|------|
-| `/` | 메인 랜딩 페이지 |
-| `/login` | 로그인 (이메일/비밀번호 + Google) |
-| `/signup` | 회원가입 (교사/학부모 역할 선택) |
-| `/forgot-password` | 비밀번호 찾기 (이메일 재설정) |
-| `/change-password` | 비밀번호 변경 |
-| `/admin` | 관리자 페이지 (계정 잠금 해제) |
-| `/notice/teacher` | 알림장 - 교사용 (작성/AI정리/저장/삭제) |
-| `/notice/parents` | 알림장 - 학부모용 (날짜별 조회) |
-| `/teacher` | 상담 예약 - 교사용 (시간 설정/예약 관리) |
-| `/parent` | 상담 예약 - 학부모용 (예약/조회/취소) |
-| `/booking/[teacherId]` | 상담 예약 - 교사 링크 직접 접근 |
-| `/check-reservation` | 상담 예약 조회 및 취소 |
-| `/api/auth/check-lock` | 서버 사이드 로그인 잠금 검증 API |
+| `/` | 硫붿씤 ?쒕뵫 ?섏씠吏 |
+| `/login` | 濡쒓렇??(?대찓??鍮꾨?踰덊샇 + Google) |
+| `/signup` | ?뚯썝媛??(援먯궗/?숇?紐???븷 ?좏깮) |
+| `/forgot-password` | 鍮꾨?踰덊샇 李얘린 (?대찓???ъ꽕?? |
+| `/change-password` | 鍮꾨?踰덊샇 蹂寃?|
+| `/admin` | 愿由ъ옄 ?섏씠吏 (怨꾩젙 ?좉툑 ?댁젣) |
+| `/notice/teacher` | ?뚮┝??- 援먯궗??(?묒꽦/AI?뺣━/?????젣) |
+| `/notice/parents` | ?뚮┝??- ?숇?紐⑥슜 (?좎쭨蹂?議고쉶) |
+| `/teacher` | ?곷떞 ?덉빟 - 援먯궗??(?쒓컙 ?ㅼ젙/?덉빟 愿由? |
+| `/parent` | ?곷떞 ?덉빟 - ?숇?紐⑥슜 (?덉빟/議고쉶/痍⑥냼) |
+| `/booking/[teacherId]` | ?곷떞 ?덉빟 - 援먯궗 留곹겕 吏곸젒 ?묎렐 |
+| `/check-reservation` | ?곷떞 ?덉빟 議고쉶 諛?痍⑥냼 |
+| `/api/auth/check-lock` | ?쒕쾭 ?ъ씠??濡쒓렇???좉툑 寃利?API |
 
-## 완료된 작업
-- [x] 깃허브 레포지토리 복제 (schoolalarm, counseling-reservation)
-- [x] Next.js 기반 통합 프로젝트 구조 설정
-- [x] 알림장(schoolalarm) 기능을 Vite→Next.js로 마이그레이션
-  - [x] TeacherPage → `/notice/teacher` (TSX 변환)
-  - [x] ParentPage → `/notice/parents` (TSX 변환)
-  - [x] 서비스 파일 마이그레이션 (notice-firebase.ts, notice-ai.ts)
-  - [x] 환경변수 VITE_ → NEXT_PUBLIC_ 전환 (기존 DB 구조 완벽 보존)
-- [x] 상담예약(counseling-reservation) 기능 루트로 이동
-- [x] 통합 메인 페이지 생성 (app/page.tsx)
-- [x] package.json 통합 (모든 의존성 병합)
-- [x] .env.local.example 통합 (Firebase + Upstage API 키)
-- [x] 불필요한 원본 폴더 삭제 (schoolalarm/, counseling-reservation/)
-- [x] UI/UX 개선
-  - [x] 전역 기본 폰트를 Pretendard로 변경하여 가독성 개선
-  - [x] 메인 페이지 설명 문구 줄바꿈 및 강조 텍스트 적용 ("학급에서 전하는 안내사항을")
-  - [x] 메인 페이지 푸터 텍스트 변경 ("Powered by HooniKim")
-  - [x] 버튼 호버 시 3D 상승 효과 및 테마별 네온 글로우 섀도우 추가
-  - [x] 메인 기능 설명 아이콘을 직관적인 이모지(📋, 🗓️)로 교체 및 애니메이션 추가
-  - [x] 파비콘(`icon.svg`)을 모던한 학사모 형태로 변경
-- [x] 통합 프로젝트 깃허브 업로드 (HooniKims/schoolholic)
-- [x] 알림장 AI를 Upstage Solar Mini → 로컬 LLM (Ollama) 으로 전환
-  - [x] notice-ai.ts: OpenAI SDK → 브라우저 직접 fetch (api.alluser.site 프록시)
-  - [x] 자동 재시도 로직, 텍스트 후처리, Sandwich 기법 적용
-  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가 (Gemma 3 4B 기본값, Qwen, Llama 등 모델별 특징 표기)
-  - [x] 환경변수 NEXT_PUBLIC_UPSTAGE_API_KEY → NEXT_PUBLIC_OLLAMA_API_KEY 변경
-- [x] 로그인/인증 시스템 구현
-  - [x] Firebase Authentication 설정 (이메일/비밀번호 + Google 소셜 로그인)
-  - [x] Firestore 사용자 프로필 스키마 (교사/학부모/관리자 역할)
-  - [x] 인증 서비스 레이어 (auth-firebase.ts)
-  - [x] NEIS 학교 검색 API 연동 (school-api.ts)
-  - [x] 인증 Context + AuthGuard 컴포넌트
-  - [x] 로그인/회원가입/비밀번호 찾기·변경 페이지
-  - [x] 관리자 페이지 (계정 잠금 해제)
-  - [x] 로그인 10회 실패 시 계정 잠금 기능
-  - [x] 메인 페이지에 로그인/로그아웃 UI 통합
-  - [x] 기존 하드코딩 비밀번호 인증 제거 → Firebase Auth로 통합
-  - [x] 비로그인 시 보호 페이지(`/notice/teacher`, `/notice/parents`, `/teacher`, `/parent`) 접근 차단 → `/login`으로 리다이렉트
-  - [x] Firebase 빌드 타임 초기화 오류 해결 (try-catch 방식)
-- [x] 상담 예약 시스템 교사별 개별 시간표 분리 기능 연동 수정 (하드코딩 제거 및 UID 연동)
-- [x] 학부모 예약 페이지 해당 담임 교사 시간표 자동 매칭 연동 적용
-- [x] `feature/auth-system` 브랜치로 깃허브 업로드 및 Netlify 브랜치 배포
-- [x] `feature/auth-system` 브랜치를 `main`으로 병합(Merge) 및 테스트 브랜치 삭제 완료
-- [x] 통합 테스트 (알림장 + 상담 예약 동시 기능 연동 확인)
-  - [x] 알림장 데이터 교사별 분리 (`notice-firebase.ts` → 문서 ID: `{teacherUid}_{dateStr}`)
-  - [x] 학부모 알림장 조회 시 `matchedTeacherId` 기반 교사 알림장만 표시
-  - [x] 교사 미매칭 학부모에게 안내 메시지 표시
-- [x] 로그인 잠금 로직 서버 사이드 검증(Next API)으로 강화
-  - [x] `/api/auth/check-lock` API Route 생성 (Firestore REST API 기반)
-  - [x] `auth-firebase.ts`에서 잠금 확인/실패 횟수 관리를 서버 API 호출로 전환
-- [x] 알림장 전체 목록 조회 시 복합 인덱스 오류(Firestore Index Error) 해결 (클라이언트 단 정렬로 우회)
-- [x] ~~다크 모드 지원~~ → 삭제 완료 (기본 다크 테마 유지, 토글 기능 제거)
-- [x] 회원 탈퇴 기능
-  - [x] `UserProfileModal.tsx` 컴포넌트 (아이디, 가입일 표시 + 3단계 탈퇴 확인 플로우)
-  - [x] `auth-firebase.ts`에 `deleteAccount()` 함수 (Firebase Auth + Firestore 프로필 삭제)
-  - [x] 탈퇴 실패 시 Firestore 프로필 문서 복구(Rollback) 및 재로그인 안내 로직 보강
-  - [x] 메인 페이지 사람 아이콘 클릭 → 프로필 팝업 연동
-- [x] 모바일 반응형 최적화
-  - [x] `Layout.tsx` 모바일 반응형 패딩/폰트 사이즈 개선
-  - [x] 터치 타겟 최소 44px 보장 (CSS)
-  - [x] iOS 줌 방지 (input 16px 고정)
-  - [x] Safe Area Inset 지원 (노치 디바이스)
-  - [x] 캘린더 모바일 최적화
-- [x] PWA 지원
-  - [x] `public/manifest.json` 생성 (아이콘, 테마, 시작 URL)
-  - [x] `public/sw.js` Service Worker (네트워크 우선 캐싱, 오프라인 fallback, 푸시 알림 수신)
-  - [x] `public/icons/` PWA 아이콘 세트 (72~512px)
-  - [x] `layout.tsx`에 manifest 링크, Service Worker 등록 스크립트 추가
-  - [x] `next.config.ts`에 SW 스코프 헤더 설정
-- [x] 콘솔 경고(`Link preload but not used`, `Tracking Prevention`) 분석 및 원인 파악
-- [x] `lib/notice-ai.ts`에서 동작이 불안정한 `GLM-4.7-Flash` 모델 제거
-- [x] AI 모델 목록에 `glm4:9b-chat-q8_0` 추가 및 모델별 비교 설명 보강
-- [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치)
-- [x] 교사 중복 가입 방지 로직 적용 (`checkTeacherDuplicate` 함수 기반 동일 학교/학년/반 검증)
-- [x] 전역 다국어(영어) 지원 (i18n) 통합 구현
-  - [x] `LanguageProvider` 및 `useLanguage` 훅 기반 상태 관리
-  - [x] 전체 13개 페이지/컴포넌트 한국어 텍스트 영어 번역 적용
-  - [x] 캘린더 로케일(`react-calendar`), 상담 날짜 포맷팅(`formatDateI18n`), 상담 주제 동적 번역 처리
-- [x] '내 정보' 내 학교 및 반 표시 오류(Nclass)를 i18n 대응 `t('schoolInfo')`로 수정
-- [x] 학부모-교사 매칭 오류 수정 
-  - [x] 학교 직접 입력 시 `schoolCode` 부재로 인해 발생하는 쿼리 실패 문제 해결 (이름 기반 Fallback 쿼리 제외, 대신 검색 결과 선택을 강제하여 무조건 올바른 `schoolCode` 확보)
-  - [x] 컴포넌트 생명주기와 DB 쿼리가 충돌해 화면에 실시간 반영되지 않는 문제 해결 (Context Profile 연동으로 갱신)
-- [x] 정보 누락 방지를 위한 UI 변경
-  - [x] 회원가입 폼 제출 시 `schoolCode`가 없을 경우 '검색된 학교 목록에서 학교를 선택해주세요' 오류 메시지 출력 추가
-  - [x] `components/SchoolSearch.tsx` 내 직관성을 해칠 수 있는 '직접 입력하기' 수동 입력 기능 및 버튼 제거
-  - [x] 선택 완료 시 초록색 테두리 변경 및 체크 표시(CheckCircle)를 추가해 시각적 피드백 제공
-  - [x] 사용자가 선택된 상태에서 학교명을 다시 텍스트 수정 시, 선택 상태와 값을 초기화해 정보 불일치를 방지
-- [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치)
-- [x] 모바일 콘텐츠 스크롤 및 잘림 문제 수정
-  - [x] `Layout.tsx` 카드 래퍼의 `overflow-hidden` 제거 (터치 스크롤 차단 원인)
-  - [x] 알림장 교사 페이지 AI 결과 미리보기 `max-h-[400px]` 제거 (콘텐츠 잘림 원인)
-  - [x] 알림장 학부모 페이지 빈 상태 영역 `h-[300px]` → `min-h-[300px]` 변경
-- [x] 모바일 textarea 내부 스크롤 시 페이지 전체 스크롤 방지 (`overscroll-behavior: contain` 전역 적용)
-- [x] 알림장 URL 자동 하이퍼링크 처리
-  - [x] `components/NoticeMarkdown.tsx` 공통 렌더러 추가
-  - [x] 직접 입력/붙여넣기한 URL 및 bare domain을 저장 후 클릭 가능한 링크로 자동 변환
-  - [x] 기존 마크다운 링크, 코드 블록, 이미지 등은 자동 변환 대상에서 제외
-- [x] 운영 안정성 기준 lint 오류 3건 수정
-  - [x] `components/UserProfileModal.tsx`, `lib/auth-firebase.ts`의 `catch (error: any)` 제거 및 안전한 에러 속성 추출 적용
-  - [x] `lib/i18n.ts`의 언어 상태를 `useSyncExternalStore` 기반으로 정리해 effect 내 직접 `setState` 제거
-  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` 검증 완료
-- [x] 학부모 예약 화면 슬롯 표시/선택 로직 수정
-  - [x] `/parent`, `/booking/[teacherId]`에서 미래 슬롯 전체(available/reserved) 노출 및 reserved 슬롯 비활성 처리
-  - [x] 학부모 공개 화면에서 reserved 상태만 표시하고 예약자 개인정보 비노출 유지
-  - [x] 예약 시 슬롯 상태를 transaction으로 재검증하여 동시 예약 충돌 방지
-  - [x] 예약 관련 i18n 문구(한/영) 보강 및 빌드 검증 완료
-- [x] 교사용 상담 슬롯 일괄 삭제 기능 추가
-  - [x] `/teacher` 상담 슬롯 목록에 다중 선택 UI 및 전체 선택/선택 삭제 액션 추가
-  - [x] reserved 슬롯은 선택 대상에서 제외하고 available 슬롯만 일괄 삭제 가능하도록 제한
-  - [x] 대량 삭제 시 Firestore batch commit을 분할 실행해 많은 슬롯도 처리 가능하게 구성
-  - [x] 관련 확인 문구 i18n 반영 및 lint/typecheck/build 재검증 완료
-- [x] 저장소 전반 lint warning 정리
-  - [x] 미사용 import/state/function 제거 및 공개 API/컴포넌트 시그니처 정리
-  - [x] `app/check-reservation/page.tsx`, `app/api/auth/check-lock/route.ts`, `components/SchoolSearch.tsx` 등 경고 발생 파일 정리
-  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` 재검증 완료
-- [x] baseline-browser-mapping 빌드 안내 메시지 점검
-  - [x] `package-lock.json`의 transitive `baseline-browser-mapping`을 `2.8.28`에서 `2.10.7`로 갱신
-  - [x] `npm run build` 재검증 결과, 남은 메시지는 저장소 버전 고정 문제가 아니라 업스트림 데이터 갱신 주기 이슈임을 확인
-- [x] 알림장 AI 변환 로직 점검
-  - [x] `lib/notice-ai.ts` 기준으로 카테고리 분류가 후처리 규칙이 아니라 LLM 프롬프트 지시만으로 결정됨을 확인
-  - [x] `💰 납부/제출`처럼 서로 성격이 다른 항목이 한 카테고리에 묶여 있어 일반적인 제출 안내도 돈주머니 이모지로 쏠릴 수 있음을 확인
-- [x] 알림장 AI 카테고리 체계 개선
-  - [x] `lib/notice-ai.ts`의 카테고리를 `공지, 안내, 제출, 학습 안내, 학교 생활, 납부, 기타 안내` 7개 고정 체계로 재정의
-  - [x] `제출`과 `납부`를 프롬프트와 후처리 양쪽에서 분리해 `납부/제출` 혼합 섹션이 생기지 않도록 보정
-  - [x] AI 출력 마크다운을 후처리로 재분류해 허용된 카테고리/아이콘만 남기도록 정규화
-  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` 검증 완료
-- [x] 학부모 상담 예약 빈 상태 문구 수정
-  - [x] `/parent`, `/booking/[teacherId]`에서 사용하는 `noTimeSlots` 한국어 문구를 `상담 가능한 시간이 없습니다.`로 조정
-- [x] 학부모 예약/조회 기준을 학년, 반, 이름 중심으로 개선
-  - [x] `/parent`, `/booking/[teacherId]`, `/check-reservation` 입력 흐름을 `학년 + 반 + 이름` 기준으로 조정
-  - [x] 로그인한 학부모의 `/parent`와 공유 예약 링크 화면에서 가입 프로필의 학년, 반, 자녀 이름을 자동 입력
-  - [x] 예약 문서에 `grade`, `classNum`을 함께 저장하고 기존 `studentNumber`는 선택값처럼 호환 처리
-  - [x] 기존 예약 문서도 조회되도록 담임 교사 정보 기반 fallback 검색 로직 추가
-  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` 검증 완료
-- [x] 교사와 학부모 매칭 누락 문제 해결 (가입 순서 무관 매칭 또는 로그인 시 매칭 갱신 등)
-- [x] 구글 계정으로 가입/로그인 시 역할(교사/학부모) 선택 없이 가입되는 문제 해결 (가입 시 역할 선택 화면 추가)
-- [x] 공개 예약 조회 화면을 학교 기준까지 포함하도록 보강
-  - [x] `/check-reservation`에 학교 검색/선택 입력을 추가하고 로그인한 학부모는 가입 학교 정보를 자동 입력
-  - [x] 예약 조회 헬퍼가 `schoolCode + 학년 + 반 + 이름` 기준으로 필터링되도록 확장
-  - [x] `/parent` 조회도 `matchedTeacherId` 예외 상황에서 `schoolCode`를 함께 사용하도록 보강
-  - [x] `SchoolSearch`에 밝은 폼용 스타일 옵션을 추가해 기존 가입 화면 흐름은 유지하고 공개 조회 화면에 재사용
-  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` 검증 완료
-- [x] 기존 가입 학부모의 누락된 자녀 이름 입력 흐름 보강
-  - [x] `/parent`, `/booking/[teacherId]`에서 로그인한 학부모의 자녀 이름이 비어 있을 때 자동 다음 단계 진입을 막고 이름 입력 후에만 예약 시작
-  - [x] 누락된 자녀 이름을 예약 1단계에서 입력하면 학부모 프로필에도 저장해 이후에는 자동 입력되도록 보강
-  - [x] 이름이 저장된 학부모만 이름 입력칸을 읽기 전용으로 유지하고, 누락된 경우에는 `/parent`, `/booking/[teacherId]`, `/check-reservation`에서 직접 입력 가능하도록 조정
-  - [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치)
-- [x] 학년/반/이름 기반 예약 조회 고도화 및 학교 검색 연동 완료
-- [x] 학년/반 변경 UX 노출 시점 조정
-  - [x] 메인 화면의 학년/반 변경 안내 문구와 진입 버튼 제거
-  - [x] 상단 프로필 아이콘으로 여는 '내 정보' 팝업에서만 학년/반 변경 옵션 제공 유지
-  - [x] 강제 학년/반 확인 팝업은 2027년 3월 1일부터만 표시되도록 제한
-- [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치) - 2026-03-14
+## ?꾨즺???묒뾽
+- [x] 源껎뿀釉??덊룷吏?좊━ 蹂듭젣 (schoolalarm, counseling-reservation)
+- [x] Next.js 湲곕컲 ?듯빀 ?꾨줈?앺듃 援ъ“ ?ㅼ젙
+- [x] ?뚮┝??schoolalarm) 湲곕뒫??Vite?묿ext.js濡?留덉씠洹몃젅?댁뀡
+  - [x] TeacherPage ??`/notice/teacher` (TSX 蹂??
+  - [x] ParentPage ??`/notice/parents` (TSX 蹂??
+  - [x] ?쒕퉬???뚯씪 留덉씠洹몃젅?댁뀡 (notice-firebase.ts, notice-ai.ts)
+  - [x] ?섍꼍蹂??VITE_ ??NEXT_PUBLIC_ ?꾪솚 (湲곗〈 DB 援ъ“ ?꾨꼍 蹂댁〈)
+- [x] ?곷떞?덉빟(counseling-reservation) 湲곕뒫 猷⑦듃濡??대룞
+- [x] ?듯빀 硫붿씤 ?섏씠吏 ?앹꽦 (app/page.tsx)
+- [x] package.json ?듯빀 (紐⑤뱺 ?섏〈??蹂묓빀)
+- [x] .env.local.example ?듯빀 (Firebase + Upstage API ??
+- [x] 遺덊븘?뷀븳 ?먮낯 ?대뜑 ??젣 (schoolalarm/, counseling-reservation/)
+- [x] UI/UX 媛쒖꽑
+  - [x] ?꾩뿭 湲곕낯 ?고듃瑜?Pretendard濡?蹂寃쏀븯??媛?낆꽦 媛쒖꽑
+  - [x] 硫붿씤 ?섏씠吏 ?ㅻ챸 臾멸뎄 以꾨컮轅?諛?媛뺤“ ?띿뒪???곸슜 ("?숆툒?먯꽌 ?꾪븯???덈궡?ы빆??)
+  - [x] 硫붿씤 ?섏씠吏 ?명꽣 ?띿뒪??蹂寃?("Powered by HooniKim")
+  - [x] 踰꾪듉 ?몃쾭 ??3D ?곸듅 ?④낵 諛??뚮쭏蹂??ㅼ삩 湲濡쒖슦 ??꾩슦 異붽?
+  - [x] 硫붿씤 湲곕뒫 ?ㅻ챸 ?꾩씠肄섏쓣 吏곴??곸씤 ?대え吏(?뱥, ?뿎截?濡?援먯껜 諛??좊땲硫붿씠??異붽?
+  - [x] ?뚮퉬肄?`icon.svg`)??紐⑤뜕???숈궗紐??뺥깭濡?蹂寃?
+- [x] ?듯빀 ?꾨줈?앺듃 源껎뿀釉??낅줈??(HooniKims/schoolholic)
+- [x] ?뚮┝??AI瑜?Upstage Solar Mini ??濡쒖뺄 LLM (Ollama) ?쇰줈 ?꾪솚
+  - [x] notice-ai.ts: OpenAI SDK ??釉뚮씪?곗? 吏곸젒 fetch (api.alluser.site ?꾨줉??
+  - [x] ?먮룞 ?ъ떆??濡쒖쭅, ?띿뒪???꾩쿂由? Sandwich 湲곕쾿 ?곸슜
+  - [x] 援먯궗 ?섏씠吏??AI 紐⑤뜽 ?좏깮 ?쒕∼?ㅼ슫 UI 異붽? (Gemma 3 4B 湲곕낯媛? Qwen, Llama ??紐⑤뜽蹂??뱀쭠 ?쒓린)
+  - [x] ?섍꼍蹂??NEXT_PUBLIC_UPSTAGE_API_KEY ??NEXT_PUBLIC_OLLAMA_API_KEY 蹂寃?
+- [x] 濡쒓렇???몄쬆 ?쒖뒪??援ы쁽
+  - [x] Firebase Authentication ?ㅼ젙 (?대찓??鍮꾨?踰덊샇 + Google ?뚯뀥 濡쒓렇??
+  - [x] Firestore ?ъ슜???꾨줈???ㅽ궎留?(援먯궗/?숇?紐?愿由ъ옄 ??븷)
+  - [x] ?몄쬆 ?쒕퉬???덉씠??(auth-firebase.ts)
+  - [x] NEIS ?숆탳 寃??API ?곕룞 (school-api.ts)
+  - [x] ?몄쬆 Context + AuthGuard 而댄룷?뚰듃
+  - [x] 濡쒓렇???뚯썝媛??鍮꾨?踰덊샇 李얘린쨌蹂寃??섏씠吏
+  - [x] 愿由ъ옄 ?섏씠吏 (怨꾩젙 ?좉툑 ?댁젣)
+  - [x] 濡쒓렇??10???ㅽ뙣 ??怨꾩젙 ?좉툑 湲곕뒫
+  - [x] 硫붿씤 ?섏씠吏??濡쒓렇??濡쒓렇?꾩썐 UI ?듯빀
+  - [x] 湲곗〈 ?섎뱶肄붾뵫 鍮꾨?踰덊샇 ?몄쬆 ?쒓굅 ??Firebase Auth濡??듯빀
+  - [x] 鍮꾨줈洹몄씤 ??蹂댄샇 ?섏씠吏(`/notice/teacher`, `/notice/parents`, `/teacher`, `/parent`) ?묎렐 李⑤떒 ??`/login`?쇰줈 由щ떎?대젆??
+  - [x] Firebase 鍮뚮뱶 ???珥덇린???ㅻ쪟 ?닿껐 (try-catch 諛⑹떇)
+- [x] ?곷떞 ?덉빟 ?쒖뒪??援먯궗蹂?媛쒕퀎 ?쒓컙??遺꾨━ 湲곕뒫 ?곕룞 ?섏젙 (?섎뱶肄붾뵫 ?쒓굅 諛?UID ?곕룞)
+- [x] ?숇?紐??덉빟 ?섏씠吏 ?대떦 ?댁엫 援먯궗 ?쒓컙???먮룞 留ㅼ묶 ?곕룞 ?곸슜
+- [x] `feature/auth-system` 釉뚮옖移섎줈 源껎뿀釉??낅줈??諛?Netlify 釉뚮옖移?諛고룷
+- [x] `feature/auth-system` 釉뚮옖移섎? `main`?쇰줈 蹂묓빀(Merge) 諛??뚯뒪??釉뚮옖移???젣 ?꾨즺
+- [x] ?듯빀 ?뚯뒪??(?뚮┝??+ ?곷떞 ?덉빟 ?숈떆 湲곕뒫 ?곕룞 ?뺤씤)
+  - [x] ?뚮┝???곗씠??援먯궗蹂?遺꾨━ (`notice-firebase.ts` ??臾몄꽌 ID: `{teacherUid}_{dateStr}`)
+  - [x] ?숇?紐??뚮┝??議고쉶 ??`matchedTeacherId` 湲곕컲 援먯궗 ?뚮┝?λ쭔 ?쒖떆
+  - [x] 援먯궗 誘몃ℓ移??숇?紐⑥뿉寃??덈궡 硫붿떆吏 ?쒖떆
+- [x] 濡쒓렇???좉툑 濡쒖쭅 ?쒕쾭 ?ъ씠??寃利?Next API)?쇰줈 媛뺥솕
+  - [x] `/api/auth/check-lock` API Route ?앹꽦 (Firestore REST API 湲곕컲)
+  - [x] `auth-firebase.ts`?먯꽌 ?좉툑 ?뺤씤/?ㅽ뙣 ?잛닔 愿由щ? ?쒕쾭 API ?몄텧濡??꾪솚
+- [x] ?뚮┝???꾩껜 紐⑸줉 議고쉶 ??蹂듯빀 ?몃뜳???ㅻ쪟(Firestore Index Error) ?닿껐 (?대씪?댁뼵?????뺣젹濡??고쉶)
+- [x] ~~?ㅽ겕 紐⑤뱶 吏??~ ????젣 ?꾨즺 (湲곕낯 ?ㅽ겕 ?뚮쭏 ?좎?, ?좉? 湲곕뒫 ?쒓굅)
+- [x] ?뚯썝 ?덊눜 湲곕뒫
+  - [x] `UserProfileModal.tsx` 而댄룷?뚰듃 (?꾩씠?? 媛?낆씪 ?쒖떆 + 3?④퀎 ?덊눜 ?뺤씤 ?뚮줈??
+  - [x] `auth-firebase.ts`??`deleteAccount()` ?⑥닔 (Firebase Auth + Firestore ?꾨줈????젣)
+  - [x] ?덊눜 ?ㅽ뙣 ??Firestore ?꾨줈??臾몄꽌 蹂듦뎄(Rollback) 諛??щ줈洹몄씤 ?덈궡 濡쒖쭅 蹂닿컯
+  - [x] 硫붿씤 ?섏씠吏 ?щ엺 ?꾩씠肄??대┃ ???꾨줈???앹뾽 ?곕룞
+- [x] 紐⑤컮??諛섏쓳??理쒖쟻??
+  - [x] `Layout.tsx` 紐⑤컮??諛섏쓳???⑤뵫/?고듃 ?ъ씠利?媛쒖꽑
+  - [x] ?곗튂 ?寃?理쒖냼 44px 蹂댁옣 (CSS)
+  - [x] iOS 以?諛⑹? (input 16px 怨좎젙)
+  - [x] Safe Area Inset 吏??(?몄튂 ?붾컮?댁뒪)
+  - [x] 罹섎┛??紐⑤컮??理쒖쟻??
+- [x] PWA 吏??
+  - [x] `public/manifest.json` ?앹꽦 (?꾩씠肄? ?뚮쭏, ?쒖옉 URL)
+  - [x] `public/sw.js` Service Worker (?ㅽ듃?뚰겕 ?곗꽑 罹먯떛, ?ㅽ봽?쇱씤 fallback, ?몄떆 ?뚮┝ ?섏떊)
+  - [x] `public/icons/` PWA ?꾩씠肄??명듃 (72~512px)
+  - [x] `layout.tsx`??manifest 留곹겕, Service Worker ?깅줉 ?ㅽ겕由쏀듃 異붽?
+  - [x] `next.config.ts`??SW ?ㅼ퐫???ㅻ뜑 ?ㅼ젙
+- [x] 肄섏넄 寃쎄퀬(`Link preload but not used`, `Tracking Prevention`) 遺꾩꽍 諛??먯씤 ?뚯븙
+- [x] `lib/notice-ai.ts`?먯꽌 ?숈옉??遺덉븞?뺥븳 `GLM-4.7-Flash` 紐⑤뜽 ?쒓굅
+- [x] AI 紐⑤뜽 紐⑸줉??`glm4:9b-chat-q8_0` 異붽? 諛?紐⑤뜽蹂?鍮꾧탳 ?ㅻ챸 蹂닿컯
+- [x] 理쒖떊 蹂寃??ы빆 源껎뿀釉??낅줈??(`main` 釉뚮옖移?
+- [x] 援먯궗 以묐났 媛??諛⑹? 濡쒖쭅 ?곸슜 (`checkTeacherDuplicate` ?⑥닔 湲곕컲 ?숈씪 ?숆탳/?숇뀈/諛?寃利?
+- [x] ?꾩뿭 ?ㅺ뎅???곸뼱) 吏??(i18n) ?듯빀 援ы쁽
+  - [x] `LanguageProvider` 諛?`useLanguage` ??湲곕컲 ?곹깭 愿由?
+  - [x] ?꾩껜 13媛??섏씠吏/而댄룷?뚰듃 ?쒓뎅???띿뒪???곸뼱 踰덉뿭 ?곸슜
+  - [x] 罹섎┛??濡쒖???`react-calendar`), ?곷떞 ?좎쭨 ?щ㎎??`formatDateI18n`), ?곷떞 二쇱젣 ?숈쟻 踰덉뿭 泥섎━
+- [x] '???뺣낫' ???숆탳 諛?諛??쒖떆 ?ㅻ쪟(Nclass)瑜?i18n ???`t('schoolInfo')`濡??섏젙
+- [x] ?숇?紐?援먯궗 留ㅼ묶 ?ㅻ쪟 ?섏젙 
+  - [x] ?숆탳 吏곸젒 ?낅젰 ??`schoolCode` 遺?щ줈 ?명빐 諛쒖깮?섎뒗 荑쇰━ ?ㅽ뙣 臾몄젣 ?닿껐 (?대쫫 湲곕컲 Fallback 荑쇰━ ?쒖쇅, ???寃??寃곌낵 ?좏깮??媛뺤젣?섏뿬 臾댁“嫄??щ컮瑜?`schoolCode` ?뺣낫)
+  - [x] 而댄룷?뚰듃 ?앸챸二쇨린? DB 荑쇰━媛 異⑸룎???붾㈃???ㅼ떆媛?諛섏쁺?섏? ?딅뒗 臾몄젣 ?닿껐 (Context Profile ?곕룞?쇰줈 媛깆떊)
+- [x] ?뺣낫 ?꾨씫 諛⑹?瑜??꾪븳 UI 蹂寃?
+  - [x] ?뚯썝媛?????쒖텧 ??`schoolCode`媛 ?놁쓣 寃쎌슦 '寃?됰맂 ?숆탳 紐⑸줉?먯꽌 ?숆탳瑜??좏깮?댁＜?몄슂' ?ㅻ쪟 硫붿떆吏 異쒕젰 異붽?
+  - [x] `components/SchoolSearch.tsx` ??吏곴??깆쓣 ?댁튌 ???덈뒗 '吏곸젒 ?낅젰?섍린' ?섎룞 ?낅젰 湲곕뒫 諛?踰꾪듉 ?쒓굅
+  - [x] ?좏깮 ?꾨즺 ??珥덈줉???뚮몢由?蹂寃?諛?泥댄겕 ?쒖떆(CheckCircle)瑜?異붽????쒓컖???쇰뱶諛??쒓났
+  - [x] ?ъ슜?먭? ?좏깮???곹깭?먯꽌 ?숆탳紐낆쓣 ?ㅼ떆 ?띿뒪???섏젙 ?? ?좏깮 ?곹깭? 媛믪쓣 珥덇린?뷀빐 ?뺣낫 遺덉씪移섎? 諛⑹?
+- [x] 理쒖떊 蹂寃??ы빆 源껎뿀釉??낅줈??(`main` 釉뚮옖移?
+- [x] 紐⑤컮??肄섑뀗痢??ㅽ겕濡?諛??섎┝ 臾몄젣 ?섏젙
+  - [x] `Layout.tsx` 移대뱶 ?섑띁??`overflow-hidden` ?쒓굅 (?곗튂 ?ㅽ겕濡?李⑤떒 ?먯씤)
+  - [x] ?뚮┝??援먯궗 ?섏씠吏 AI 寃곌낵 誘몃━蹂닿린 `max-h-[400px]` ?쒓굅 (肄섑뀗痢??섎┝ ?먯씤)
+  - [x] ?뚮┝???숇?紐??섏씠吏 鍮??곹깭 ?곸뿭 `h-[300px]` ??`min-h-[300px]` 蹂寃?
+- [x] 紐⑤컮??textarea ?대? ?ㅽ겕濡????섏씠吏 ?꾩껜 ?ㅽ겕濡?諛⑹? (`overscroll-behavior: contain` ?꾩뿭 ?곸슜)
+- [x] ?뚮┝??URL ?먮룞 ?섏씠?쇰쭅??泥섎━
+  - [x] `components/NoticeMarkdown.tsx` 怨듯넻 ?뚮뜑??異붽?
+  - [x] 吏곸젒 ?낅젰/遺숈뿬?ｊ린??URL 諛?bare domain????????대┃ 媛?ν븳 留곹겕濡??먮룞 蹂??
+  - [x] 湲곗〈 留덊겕?ㅼ슫 留곹겕, 肄붾뱶 釉붾줉, ?대?吏 ?깆? ?먮룞 蹂????곸뿉???쒖쇅
+- [x] ?댁쁺 ?덉젙??湲곗? lint ?ㅻ쪟 3嫄??섏젙
+  - [x] `components/UserProfileModal.tsx`, `lib/auth-firebase.ts`??`catch (error: any)` ?쒓굅 諛??덉쟾???먮윭 ?띿꽦 異붿텧 ?곸슜
+  - [x] `lib/i18n.ts`???몄뼱 ?곹깭瑜?`useSyncExternalStore` 湲곕컲?쇰줈 ?뺣━??effect ??吏곸젒 `setState` ?쒓굅
+  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` 寃利??꾨즺
+- [x] ?숇?紐??덉빟 ?붾㈃ ?щ’ ?쒖떆/?좏깮 濡쒖쭅 ?섏젙
+  - [x] `/parent`, `/booking/[teacherId]`?먯꽌 誘몃옒 ?щ’ ?꾩껜(available/reserved) ?몄텧 諛?reserved ?щ’ 鍮꾪솢??泥섎━
+  - [x] ?숇?紐?怨듦컻 ?붾㈃?먯꽌 reserved ?곹깭留??쒖떆?섍퀬 ?덉빟??媛쒖씤?뺣낫 鍮꾨끂異??좎?
+  - [x] ?덉빟 ???щ’ ?곹깭瑜?transaction?쇰줈 ?ш?利앺븯???숈떆 ?덉빟 異⑸룎 諛⑹?
+  - [x] ?덉빟 愿??i18n 臾멸뎄(???? 蹂닿컯 諛?鍮뚮뱶 寃利??꾨즺
+- [x] 援먯궗???곷떞 ?щ’ ?쇨큵 ??젣 湲곕뒫 異붽?
+  - [x] `/teacher` ?곷떞 ?щ’ 紐⑸줉???ㅼ쨷 ?좏깮 UI 諛??꾩껜 ?좏깮/?좏깮 ??젣 ?≪뀡 異붽?
+  - [x] reserved ?щ’? ?좏깮 ??곸뿉???쒖쇅?섍퀬 available ?щ’留??쇨큵 ??젣 媛?ν븯?꾨줉 ?쒗븳
+  - [x] ?????젣 ??Firestore batch commit??遺꾪븷 ?ㅽ뻾??留롮? ?щ’??泥섎━ 媛?ν븯寃?援ъ꽦
+  - [x] 愿???뺤씤 臾멸뎄 i18n 諛섏쁺 諛?lint/typecheck/build ?ш?利??꾨즺
+- [x] ??μ냼 ?꾨컲 lint warning ?뺣━
+  - [x] 誘몄궗??import/state/function ?쒓굅 諛?怨듦컻 API/而댄룷?뚰듃 ?쒓렇?덉쿂 ?뺣━
+  - [x] `app/check-reservation/page.tsx`, `app/api/auth/check-lock/route.ts`, `components/SchoolSearch.tsx` ??寃쎄퀬 諛쒖깮 ?뚯씪 ?뺣━
+  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` ?ш?利??꾨즺
+- [x] baseline-browser-mapping 鍮뚮뱶 ?덈궡 硫붿떆吏 ?먭?
+  - [x] `package-lock.json`??transitive `baseline-browser-mapping`??`2.8.28`?먯꽌 `2.10.7`濡?媛깆떊
+  - [x] `npm run build` ?ш?利?寃곌낵, ?⑥? 硫붿떆吏????μ냼 踰꾩쟾 怨좎젙 臾몄젣媛 ?꾨땲???낆뒪?몃┝ ?곗씠??媛깆떊 二쇨린 ?댁뒋?꾩쓣 ?뺤씤
+- [x] ?뚮┝??AI 蹂??濡쒖쭅 ?먭?
+  - [x] `lib/notice-ai.ts` 湲곗??쇰줈 移댄뀒怨좊━ 遺꾨쪟媛 ?꾩쿂由?洹쒖튃???꾨땲??LLM ?꾨＼?꾪듃 吏?쒕쭔?쇰줈 寃곗젙?⑥쓣 ?뺤씤
+  - [x] `?뮥 ?⑸?/?쒖텧`泥섎읆 ?쒕줈 ?깃꺽???ㅻⅨ ??ぉ????移댄뀒怨좊━??臾띠뿬 ?덉뼱 ?쇰컲?곸씤 ?쒖텧 ?덈궡???덉＜癒몃땲 ?대え吏濡??좊┫ ???덉쓬???뺤씤
+- [x] ?뚮┝??AI 移댄뀒怨좊━ 泥닿퀎 媛쒖꽑
+  - [x] `lib/notice-ai.ts`??移댄뀒怨좊━瑜?`怨듭?, ?덈궡, ?쒖텧, ?숈뒿 ?덈궡, ?숆탳 ?앺솢, ?⑸?, 湲고? ?덈궡` 7媛?怨좎젙 泥닿퀎濡??ъ젙??
+  - [x] `?쒖텧`怨?`?⑸?`瑜??꾨＼?꾪듃? ?꾩쿂由??묒そ?먯꽌 遺꾨━??`?⑸?/?쒖텧` ?쇳빀 ?뱀뀡???앷린吏 ?딅룄濡?蹂댁젙
+  - [x] AI 異쒕젰 留덊겕?ㅼ슫???꾩쿂由щ줈 ?щ텇瑜섑빐 ?덉슜??移댄뀒怨좊━/?꾩씠肄섎쭔 ?④린?꾨줉 ?뺢퇋??
+  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` 寃利??꾨즺
+- [x] ?숇?紐??곷떞 ?덉빟 鍮??곹깭 臾멸뎄 ?섏젙
+  - [x] `/parent`, `/booking/[teacherId]`?먯꽌 ?ъ슜?섎뒗 `noTimeSlots` ?쒓뎅??臾멸뎄瑜?`?곷떞 媛?ν븳 ?쒓컙???놁뒿?덈떎.`濡?議곗젙
+- [x] ?숇?紐??덉빟/議고쉶 湲곗????숇뀈, 諛? ?대쫫 以묒떖?쇰줈 媛쒖꽑
+  - [x] `/parent`, `/booking/[teacherId]`, `/check-reservation` ?낅젰 ?먮쫫??`?숇뀈 + 諛?+ ?대쫫` 湲곗??쇰줈 議곗젙
+  - [x] 濡쒓렇?명븳 ?숇?紐⑥쓽 `/parent`? 怨듭쑀 ?덉빟 留곹겕 ?붾㈃?먯꽌 媛???꾨줈?꾩쓽 ?숇뀈, 諛? ?먮? ?대쫫???먮룞 ?낅젰
+  - [x] ?덉빟 臾몄꽌??`grade`, `classNum`???④퍡 ??ν븯怨?湲곗〈 `studentNumber`???좏깮媛믪쿂???명솚 泥섎━
+  - [x] 湲곗〈 ?덉빟 臾몄꽌??議고쉶?섎룄濡??댁엫 援먯궗 ?뺣낫 湲곕컲 fallback 寃??濡쒖쭅 異붽?
+  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` 寃利??꾨즺
+- [x] 援먯궗? ?숇?紐?留ㅼ묶 ?꾨씫 臾몄젣 ?닿껐 (媛???쒖꽌 臾닿? 留ㅼ묶 ?먮뒗 濡쒓렇????留ㅼ묶 媛깆떊 ??
+- [x] 援ш? 怨꾩젙?쇰줈 媛??濡쒓렇??????븷(援먯궗/?숇?紐? ?좏깮 ?놁씠 媛?낅릺??臾몄젣 ?닿껐 (媛??????븷 ?좏깮 ?붾㈃ 異붽?)
+- [x] 怨듦컻 ?덉빟 議고쉶 ?붾㈃???숆탳 湲곗?源뚯? ?ы븿?섎룄濡?蹂닿컯
+  - [x] `/check-reservation`???숆탳 寃???좏깮 ?낅젰??異붽??섍퀬 濡쒓렇?명븳 ?숇?紐⑤뒗 媛???숆탳 ?뺣낫瑜??먮룞 ?낅젰
+  - [x] ?덉빟 議고쉶 ?ы띁媛 `schoolCode + ?숇뀈 + 諛?+ ?대쫫` 湲곗??쇰줈 ?꾪꽣留곷릺?꾨줉 ?뺤옣
+  - [x] `/parent` 議고쉶??`matchedTeacherId` ?덉쇅 ?곹솴?먯꽌 `schoolCode`瑜??④퍡 ?ъ슜?섎룄濡?蹂닿컯
+  - [x] `SchoolSearch`??諛앹? ?쇱슜 ?ㅽ????듭뀡??異붽???湲곗〈 媛???붾㈃ ?먮쫫? ?좎??섍퀬 怨듦컻 議고쉶 ?붾㈃???ъ궗??
+  - [x] `npm run lint`, `npx tsc --noEmit`, `npm run build` 寃利??꾨즺
+- [x] 湲곗〈 媛???숇?紐⑥쓽 ?꾨씫???먮? ?대쫫 ?낅젰 ?먮쫫 蹂닿컯
+  - [x] `/parent`, `/booking/[teacherId]`?먯꽌 濡쒓렇?명븳 ?숇?紐⑥쓽 ?먮? ?대쫫??鍮꾩뼱 ?덉쓣 ???먮룞 ?ㅼ쓬 ?④퀎 吏꾩엯??留됯퀬 ?대쫫 ?낅젰 ?꾩뿉留??덉빟 ?쒖옉
+  - [x] ?꾨씫???먮? ?대쫫???덉빟 1?④퀎?먯꽌 ?낅젰?섎㈃ ?숇?紐??꾨줈?꾩뿉????ν빐 ?댄썑?먮뒗 ?먮룞 ?낅젰?섎룄濡?蹂닿컯
+  - [x] ?대쫫????λ맂 ?숇?紐⑤쭔 ?대쫫 ?낅젰移몄쓣 ?쎄린 ?꾩슜?쇰줈 ?좎??섍퀬, ?꾨씫??寃쎌슦?먮뒗 `/parent`, `/booking/[teacherId]`, `/check-reservation`?먯꽌 吏곸젒 ?낅젰 媛?ν븯?꾨줉 議곗젙
+  - [x] 理쒖떊 蹂寃??ы빆 源껎뿀釉??낅줈??(`main` 釉뚮옖移?
+- [x] ?숇뀈/諛??대쫫 湲곕컲 ?덉빟 議고쉶 怨좊룄??諛??숆탳 寃???곕룞 ?꾨즺
+- [x] ?숇뀈/諛?蹂寃?UX ?몄텧 ?쒖젏 議곗젙
+  - [x] 硫붿씤 ?붾㈃???숇뀈/諛?蹂寃??덈궡 臾멸뎄? 吏꾩엯 踰꾪듉 ?쒓굅
+  - [x] ?곷떒 ?꾨줈???꾩씠肄섏쑝濡??щ뒗 '???뺣낫' ?앹뾽?먯꽌留??숇뀈/諛?蹂寃??듭뀡 ?쒓났 ?좎?
+  - [x] 媛뺤젣 ?숇뀈/諛??뺤씤 ?앹뾽? 2027??3??1?쇰??곕쭔 ?쒖떆?섎룄濡??쒗븳
+- [x] 理쒖떊 蹂寃??ы빆 源껎뿀釉??낅줈??(`main` 釉뚮옖移? - 2026-03-14
+

@@ -15,6 +15,7 @@ import Layout from '@/components/Layout';
 import Button from '@/components/Button';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ConfirmModal from '@/components/ConfirmModal';
+import TouchScrollableTextarea from '@/components/TouchScrollableTextarea';
 import { AvailableSlot, COUNSELING_TOPICS, CounselingTopic, Reservation } from '@/types';
 import { formatDate, formatDateI18n } from '@/lib/utils';
 import { db } from '@/lib/firebase';
@@ -556,7 +557,7 @@ function BookingTab() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('counselingContent')}
           </label>
-          <textarea
+          <TouchScrollableTextarea
             value={content}
             onChange={e => setContent(e.target.value)}
             rows={4}
