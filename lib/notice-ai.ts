@@ -5,7 +5,6 @@ const OLLAMA_API_KEY = process.env.NEXT_PUBLIC_OLLAMA_API_KEY || "";
 export const AVAILABLE_MODELS = [
     { id: "gemma3:4b-it-q4_K_M", name: "Gemma 3 4B (추천)", description: "가장 빠른 응답 · 3.3GB · 간단한 알림장에 최적" },
     { id: "qwen3:8b", name: "Qwen 3 8B (균형)", description: "속도와 품질의 균형 · 8B 파라미터 · 한국어 우수" },
-    { id: "glm4:9b-chat-q8_0", name: "GLM-4 9B Q8 (다국어 강점)", description: "다국어·한국어 강점 · 9B 최고 양자화 · Qwen 3 8B급 성능에 중·한 특화" },
 
     { id: "gemma3:12b-it-q8_0", name: "Gemma 3 12B Q8 (최고 품질)", description: "최고 품질 · 13GB · 12B 최고 양자화 · 긴 글도 안정적" },
     { id: "gemma3:12b-it-q4_K_M", name: "Gemma 3 12B Q4 (고품질)", description: "고품질 · 8GB · 12B 경량 양자화 · Q8 대비 빠름" },

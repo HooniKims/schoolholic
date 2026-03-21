@@ -102,6 +102,7 @@
 - [x] 콘솔 경고(`Link preload but not used`, `Tracking Prevention`) 분석 및 원인 파악
 - [x] `lib/notice-ai.ts`에서 동작이 불안정한 `GLM-4.7-Flash` 모델 제거
 - [x] AI 모델 목록에 `glm4:9b-chat-q8_0` 추가 및 모델별 비교 설명 보강
+- [x] `lib/notice-ai.ts`에서 `glm4:9b-chat-q8_0` 모델 제거
 - [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치)
 - [x] 교사 중복 가입 방지 로직 적용 (`checkTeacherDuplicate` 함수 기반 동일 학교/학년/반 검증)
 - [x] 전역 다국어(영어) 지원 (i18n) 통합 구현
