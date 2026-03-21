@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase';
 import Layout from '@/components/Layout';
 import Button from '@/components/Button';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import TouchScrollableTextarea from '@/components/TouchScrollableTextarea';
 import { AvailableSlot, COUNSELING_TOPICS, CounselingTopic } from '@/types';
 import { formatDate, formatDateI18n } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
@@ -442,7 +443,7 @@ export default function BookingPage() {
           <div>
             <label className="mb-2 block text-lg font-semibold text-gray-900">{t('counselingContent')}</label>
             <p className="mb-3 text-sm text-gray-600">{t('contentPlaceholder')}</p>
-            <textarea
+            <TouchScrollableTextarea
               value={content}
               onChange={e => setContent(e.target.value)}
               placeholder={t('contentPlaceholder')}

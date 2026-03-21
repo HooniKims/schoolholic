@@ -12,6 +12,7 @@ import { summarizeNote, AVAILABLE_MODELS, DEFAULT_MODEL } from '@/lib/notice-ai'
 import { saveNote, getNoteByDate, deleteNote, getAllNotes } from '@/lib/notice-firebase';
 import { useAuth } from '@/components/AuthContext';
 import { NoticeMarkdown } from '@/components/NoticeMarkdown';
+import TouchScrollableTextarea from '@/components/TouchScrollableTextarea';
 import { useLanguage } from '@/lib/i18n';
 
 export default function NoticeTeacherPage() {
@@ -270,7 +271,7 @@ export default function NoticeTeacherPage() {
                                 </select>
                             </div>
 
-                            <textarea
+                            <TouchScrollableTextarea
                                 className="w-full min-h-[150px] p-4 border border-gray-200 rounded-xl font-sans text-base resize-y mb-4 focus:ring-2 focus:ring-emerald-500 focus:border-transparent [transform:translateZ(0)]"
                                 placeholder={isFetching ? t('loadingContent') : t('notePlaceholder')}
                                 value={note}
@@ -290,7 +291,7 @@ export default function NoticeTeacherPage() {
                                     </div>
 
                                     {isEditingSummary ? (
-                                        <textarea
+                                        <TouchScrollableTextarea
                                             className="w-full min-h-[200px] p-4 border border-gray-200 rounded-xl bg-gray-50 font-sans text-base resize-y focus:ring-2 focus:ring-emerald-500 focus:border-transparent [transform:translateZ(0)]"
                                             value={summary}
                                             onChange={(e) => setSummary(e.target.value)}
