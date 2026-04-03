@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import 'react-calendar/dist/Calendar.css';
 import { getNoteByDate } from '@/lib/notice-firebase';
 import { useAuth } from '@/components/AuthContext';
-import { NoticeMarkdown } from '@/components/NoticeMarkdown';
+import { NoticePlainText } from '@/components/NoticePlainText';
 import { useLanguage } from '@/lib/i18n';
 
 export default function NoticeParentsPage() {
@@ -122,8 +122,8 @@ export default function NoticeParentsPage() {
                                     <p>{t('loadingNotice')}</p>
                                 </div>
                             ) : summary ? (
-                                <div className="prose prose-sm max-w-none">
-                                    <NoticeMarkdown content={summary} />
+                                <div className="max-w-none">
+                                    <NoticePlainText content={summary} />
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center min-h-[300px] text-gray-400">

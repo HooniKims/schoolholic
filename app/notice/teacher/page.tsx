@@ -11,7 +11,7 @@ import 'react-calendar/dist/Calendar.css';
 import { summarizeNote, AVAILABLE_MODELS, DEFAULT_MODEL } from '@/lib/notice-ai';
 import { saveNote, getNoteByDate, deleteNote, getAllNotes } from '@/lib/notice-firebase';
 import { useAuth } from '@/components/AuthContext';
-import { NoticeMarkdown } from '@/components/NoticeMarkdown';
+import { NoticePlainText } from '@/components/NoticePlainText';
 import TouchScrollableTextarea from '@/components/TouchScrollableTextarea';
 import { useLanguage } from '@/lib/i18n';
 
@@ -298,8 +298,8 @@ export default function NoticeTeacherPage() {
                                             placeholder={t('aiPlaceholder')}
                                         />
                                     ) : (
-                                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 min-h-[200px] prose prose-sm max-w-none">
-                                            <NoticeMarkdown content={summary} />
+                                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 min-h-[200px]">
+                                            <NoticePlainText content={summary} />
                                         </div>
                                     )}
                                 </div>

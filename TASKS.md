@@ -22,7 +22,7 @@
 | `/forgot-password` | 비밀번호 찾기 (이메일 재설정) |
 | `/change-password` | 비밀번호 변경 |
 | `/admin` | 관리자 페이지 (계정 잠금 해제) |
-| `/notice/teacher` | 알림장 - 교사용 (작성/AI정리/저장/삭제) |
+| `/notice/teacher` | 알림장 - 교사용 (작성/AI다듬기/저장/삭제) |
 | `/notice/parents` | 알림장 - 학부모용 (날짜별 조회) |
 | `/teacher` | 상담 예약 - 교사용 (시간 설정/예약 관리) |
 | `/parent` | 상담 예약 - 학부모용 (예약/조회/취소) |
@@ -191,3 +191,11 @@
 - [x] 기존 개인정보처리방침 초안 및 로그인 기능 구현 가이드 문서 삭제
 - [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치) - 2026-03-15
 - [x] 영문 개인정보처리방침 담당자 이름을 `KIM HYEONG HOON`으로 수정
+- [x] 알림장 AI를 일반 텍스트 다듬기 흐름으로 전환
+  - [x] `lib/notice-ai.ts` 모델 목록에서 `llama3.1:8b`, `gemma3:12b-it-q4_K_M` 제거
+  - [x] `lib/notice-ai.ts`에 `gemma4:E2B`, `gemma4:E4B` 추가 및 기본 모델을 `gemma4:E4B`로 변경
+  - [x] AI 생성 로직을 마크다운 구조화/카테고리 분류 방식에서 "문장 다듬기 + 문체 통일 + 플랫 이모지 보강" 중심으로 전면 교체
+  - [x] 신규 알림장 결과를 일반 텍스트로 표시하도록 `components/NoticePlainText.tsx` 추가 및 교사/학부모 화면 렌더링 전환
+  - [x] `components/NoticeMarkdown.tsx` 제거 및 알림장 결과의 마크다운 미리보기 흐름 종료
+  - [x] 모바일 입력창에서 스와이프 시 페이지 전체가 따라 움직이지 않도록 `TouchScrollableTextarea` 터치 스크롤 처리 보강
+  - [x] `npm run lint`, `npm run build` 검증 완료
