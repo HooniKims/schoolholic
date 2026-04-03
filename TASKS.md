@@ -199,3 +199,4 @@
   - [x] `components/NoticeMarkdown.tsx` 제거 및 알림장 결과의 마크다운 미리보기 흐름 종료
   - [x] 모바일 입력창에서 스와이프 시 페이지 전체가 따라 움직이지 않도록 `TouchScrollableTextarea` 터치 스크롤 처리 보강
   - [x] `npm run lint`, `npm run build` 검증 완료
+- [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치) - 2026-04-03
