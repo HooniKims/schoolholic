@@ -204,3 +204,7 @@
   - [x] `react-calendar/dist/Calendar.css`를 `app/layout.tsx` 전역 import로 이동하고 notice 전용 CSS 청크 분리를 제거
   - [x] 홈/로그인/회원가입/비밀번호 찾기 링크의 `prefetch={false}` 임시 우회를 제거해 첫 클릭 체감 속도를 유지
   - [x] `.next` 클린 빌드 후 `npm run lint`, `npm run build` 검증 완료
+- [x] 알림장 링크 붙여넣기 시 미리보기/저장 후 보기 화면에서 자동 하이퍼링크 처리
+  - [x] `components/NoticePlainText.tsx`에서 일반 텍스트 줄바꿈을 유지한 채 `http://`, `https://`, `www.` URL만 링크로 렌더링
+  - [x] 문장 끝 구두점은 링크 바깥으로 분리하고, `www.` 주소는 `https://`를 붙여 새 탭으로 열리도록 처리
+  - [x] 입력창 편집 흐름과 저장 포맷은 유지하고 `npm run lint`, `npm run build` 검증 완료
