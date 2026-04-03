@@ -7,7 +7,6 @@ import { ko, enUS } from 'date-fns/locale';
 import { MessageCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import 'react-calendar/dist/Calendar.css';
 import { getNoteByDate } from '@/lib/notice-firebase';
 import { useAuth } from '@/components/AuthContext';
 import { NoticePlainText } from '@/components/NoticePlainText';

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "react-calendar/dist/Calendar.css";
 import AnnualGradeClassUpdateGate from "@/components/AnnualGradeClassUpdateGate";
 import { AuthProvider } from "@/components/AuthContext";
 import { LanguageProvider } from "@/lib/i18n";

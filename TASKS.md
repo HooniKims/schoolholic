@@ -200,3 +200,7 @@
   - [x] 모바일 입력창에서 스와이프 시 페이지 전체가 따라 움직이지 않도록 `TouchScrollableTextarea` 터치 스크롤 처리 보강
   - [x] `npm run lint`, `npm run build` 검증 완료
 - [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치) - 2026-04-03
+- [x] `/login` 진입 후 메인 링크 프리패치 과정에서 발생하던 unused CSS preload 경고 해결
+  - [x] `react-calendar/dist/Calendar.css`를 `app/layout.tsx` 전역 import로 이동하고 notice 전용 CSS 청크 분리를 제거
+  - [x] 홈/로그인/회원가입/비밀번호 찾기 링크의 `prefetch={false}` 임시 우회를 제거해 첫 클릭 체감 속도를 유지
+  - [x] `.next` 클린 빌드 후 `npm run lint`, `npm run build` 검증 완료

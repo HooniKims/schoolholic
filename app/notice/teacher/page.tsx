@@ -7,7 +7,6 @@ import { ko } from 'date-fns/locale';
 import { Sparkles, Save, Trash2, Loader2, List, X, CheckSquare, Square, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import 'react-calendar/dist/Calendar.css';
 import { summarizeNote, AVAILABLE_MODELS, DEFAULT_MODEL } from '@/lib/notice-ai';
 import { saveNote, getNoteByDate, deleteNote, getAllNotes } from '@/lib/notice-firebase';
 import { useAuth } from '@/components/AuthContext';
