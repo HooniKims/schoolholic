@@ -7,7 +7,7 @@ import { ko } from 'date-fns/locale';
 import { Sparkles, Save, Trash2, Loader2, List, X, CheckSquare, Square, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { summarizeNote, AVAILABLE_MODELS, DEFAULT_MODEL } from '@/lib/notice-ai';
+import { summarizeNote, AVAILABLE_MODELS, DEFAULT_MODEL, getModelOptionLabel } from '@/lib/notice-ai';
 import { saveNote, getNoteByDate, deleteNote, getAllNotes } from '@/lib/notice-firebase';
 import { useAuth } from '@/components/AuthContext';
 import { NoticePlainText } from '@/components/NoticePlainText';
@@ -264,7 +264,7 @@ export default function NoticeTeacherPage() {
                                 >
                                     {AVAILABLE_MODELS.map((m) => (
                                         <option key={m.id} value={m.id}>
-                                            {m.name} — {m.description}
+                                            {getModelOptionLabel(m)}
                                         </option>
                                     ))}
                                 </select>

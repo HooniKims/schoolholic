@@ -1,65 +1,36 @@
-// ===== 로컬 LLM (Ollama) 설정 =====
-const OLLAMA_API_URL = "https://api.alluser.site";
-const OLLAMA_API_KEY = process.env.NEXT_PUBLIC_OLLAMA_API_KEY || "";
+import {
+    AVAILABLE_MODELS,
+    DEFAULT_MODEL,
+    LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT,
+    buildChatCompletionBody,
+    getLocalLlmApiKey,
+    getModelOptionLabel,
+} from "./local-llm";
 
-export const AVAILABLE_MODELS = [
-    {
-        id: "gemma4:E2B",
-        name: "Gemma 4 E2B",
-        description: "응답속도: 기본보다 빠름 · 품질: 기본보다 낮음",
-    },
-    {
-        id: "gemma3:4b-it-q4_K_M",
-        name: "Gemma 3 4B",
-        description: "응답속도: 기본보다 빠름 · 품질: 기본보다 낮음",
-    },
-    {
-        id: "qwen3:4b",
-        name: "Qwen 3 4B",
-        description: "응답속도: 기본보다 빠름 · 품질: 기본보다 낮음",
-    },
-    {
-        id: "gemma4:E4B",
-        name: "Gemma 4 E4B (기본)",
-        description: "응답속도: 기준 · 품질: 기준",
-    },
-    {
-        id: "qwen3:8b",
-        name: "Qwen 3 8B",
-        description: "응답속도: 기본보다 약간 느림 · 품질: 기본과 비슷함",
-    },
-    {
-        id: "gemma3:12b-it-q8_0",
-        name: "Gemma 3 12B Q8",
-        description: "응답속도: 기본보다 느림 · 품질: 기본보다 높음",
-    },
-] as const;
+export { AVAILABLE_MODELS, DEFAULT_MODEL, getModelOptionLabel };
 
-export const DEFAULT_MODEL = "gemma4:E4B";
-
-async function callOllamaAPI(
+async function callLocalLlmAPI(
     systemMessage: string,
     userPrompt: string,
     model?: string,
-    options: { temperature?: number; stream?: boolean } = {}
+    options: { temperature?: number; maxTokens?: number } = {}
 ): Promise<string> {
-    const { temperature = 0.2, stream = false } = options;
+    const apiKey = getLocalLlmApiKey();
+    const { temperature = 0.2, maxTokens } = options;
 
-    const res = await fetch(`${OLLAMA_API_URL}/v1/chat/completions`, {
+    const res = await fetch(LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "X-API-Key": OLLAMA_API_KEY,
+            "X-API-Key": apiKey,
         },
-        body: JSON.stringify({
-            model: model || DEFAULT_MODEL,
-            messages: [
-                { role: "system", content: systemMessage },
-                { role: "user", content: userPrompt },
-            ],
+        body: JSON.stringify(buildChatCompletionBody({
+            systemMessage,
+            userPrompt,
+            modelId: model || DEFAULT_MODEL,
             temperature,
-            stream,
-        }),
+            maxTokens,
+        })),
     });
 
     if (!res.ok) {
@@ -114,7 +85,7 @@ async function generateWithRetry(params: {
     model?: string;
     temperature?: number;
 }): Promise<string> {
-    let content = await callOllamaAPI(
+    let content = await callLocalLlmAPI(
         params.systemMessage,
         params.prompt,
         params.model,
@@ -139,7 +110,7 @@ async function generateWithRetry(params: {
             content,
         ].join("\n");
 
-        const retryContent = await callOllamaAPI(
+        const retryContent = await callLocalLlmAPI(
             params.systemMessage,
             retryPrompt,
             params.model,
@@ -169,9 +140,9 @@ export async function summarizeNote(
         return "";
     }
 
-    if (!OLLAMA_API_KEY) {
+    if (!getLocalLlmApiKey()) {
         throw new Error(
-            "Ollama API 키가 설정되지 않았습니다. .env.local 파일에서 NEXT_PUBLIC_OLLAMA_API_KEY를 설정해주세요."
+            "로컬 LLM API 키가 설정되지 않았습니다. .env.local 파일에서 NEXT_PUBLIC_LOCAL_LLM_API_KEY를 설정해주세요."
         );
     }
 

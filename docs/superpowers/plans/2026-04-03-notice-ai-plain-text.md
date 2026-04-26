@@ -6,7 +6,7 @@
 
 **Architecture:** `lib/notice-ai.ts`의 모델 목록과 프롬프트를 단순화해 "다듬기" 전용 파이프라인으로 바꾼다. 교사/학부모 알림장 화면은 공통 일반 텍스트 표시 컴포넌트를 공유하고, `TouchScrollableTextarea`는 경계 스크롤 체인을 차단하도록 터치 처리 로직을 보강한다.
 
-**Tech Stack:** Next.js App Router, React 19, TypeScript, Tailwind CSS v4, date-fns, Firebase, fetch-based local LLM proxy
+**Tech Stack:** Next.js App Router, React 19, TypeScript, Tailwind CSS v4, date-fns, Firebase, fetch-based LM Studio local LLM endpoint
 
 ---
 
@@ -20,38 +20,23 @@
 ```ts
 export const AVAILABLE_MODELS = [
   {
-    id: "gemma4:E2B",
+    id: "gemma4:e4b",
+    name: "Gemma 4 E4B",
+    description: "기본 모델, 기준 속도기준 품질",
+  },
+  {
+    id: "gemma4:e2b",
     name: "Gemma 4 E2B",
-    description: "응답속도: 기본보다 빠름 · 품질: 기본보다 낮음",
+    description: "기본보다 빠름, 품질은 간단",
   },
   {
-    id: "gemma4:E4B",
-    name: "Gemma 4 E4B (기본)",
-    description: "응답속도: 기준 · 품질: 기준",
-  },
-  {
-    id: "gemma3:4b-it-q4_K_M",
-    name: "Gemma 3 4B",
-    description: "응답속도: 기본보다 빠름 · 품질: 기본보다 낮음",
-  },
-  {
-    id: "qwen3:4b",
-    name: "Qwen 3 4B",
-    description: "응답속도: 기본보다 빠름 · 품질: 기본보다 낮음",
-  },
-  {
-    id: "qwen3:8b",
-    name: "Qwen 3 8B",
-    description: "응답속도: 기본보다 약간 느림 · 품질: 기본과 비슷함",
-  },
-  {
-    id: "gemma3:12b-it-q8_0",
-    name: "Gemma 3 12B Q8",
-    description: "응답속도: 기본보다 느림 · 품질: 기본보다 높음",
+    id: "lmstudio:gemma-4-26b-a4b-it-q4ks",
+    name: "Gemma 4 26B Q4",
+    description: "느리지만 품질 높음",
   },
 ];
 
-export const DEFAULT_MODEL = "gemma4:E4B";
+export const DEFAULT_MODEL = "gemma4:e4b";
 ```
 
 - [ ] **Step 2: Delete the markdown/category normalization pipeline**
@@ -348,8 +333,8 @@ Expected: exit code `0`
 Check all of these in the browser:
 
 ```text
-1. /notice/teacher 에서 기본 모델이 gemma4:E4B로 선택된다.
-2. 모델 목록에서 llama3.1:8b, gemma3:12b-it-q4_K_M 가 보이지 않는다.
+1. /notice/teacher 에서 기본 모델이 gemma4:e4b로 선택된다.
+2. 모델 목록에 Gemma 4 E4B, Gemma 4 E2B, Gemma 4 26B Q4만 보인다.
 3. AI 결과가 마크다운 섹션 없이 일반 텍스트로 표시된다.
 4. AI 결과를 직접 수정하면 줄바꿈과 들여쓰기가 그대로 유지된다.
 5. /notice/parents 에서 신규 저장 결과가 일반 텍스트로 보인다.

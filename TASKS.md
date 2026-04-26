@@ -6,7 +6,7 @@
 - **Firebase**: Firestore (알림장 & 상담 예약 데이터) + Authentication (이메일/비밀번호 + Google 로그인)
   - 기존 데이터베이스 구조와 문서를 그대로 유지 (데이터 손실 없음)
   - 알림장(`notes`), 교사정보(`teachers`), 상담슬롯(`availableSlots`), 예약정보(`reservations`), 사용자(`users`) 컬렉션 공존
-- **AI**: 로컬 LLM (Ollama via api.alluser.site 프록시, 브라우저 직접 호출)
+- **AI**: 로컬 LLM (LM Studio via lm.alluser.site, 브라우저 직접 호출)
 - **디자인/UI**: 
   - 기본 폰트: 가독성을 높인 **Pretendard** 적용
   - 다크 테마 기반 글래스모피즘(Glassmorphism)
@@ -52,11 +52,11 @@
   - [x] 메인 기능 설명 아이콘을 직관적인 이모지(📋, 🗓️)로 교체 및 애니메이션 추가
   - [x] 파비콘(`icon.svg`)을 모던한 학사모 형태로 변경
 - [x] 통합 프로젝트 깃허브 업로드 (HooniKims/schoolholic)
-- [x] 알림장 AI를 Upstage Solar Mini → 로컬 LLM (Ollama) 으로 전환
-  - [x] notice-ai.ts: OpenAI SDK → 브라우저 직접 fetch (api.alluser.site 프록시)
+- [x] 알림장 AI를 외부 생성 SDK → 로컬 LLM으로 전환
+  - [x] notice-ai.ts: 브라우저 직접 fetch 기반 로컬 LLM 호출로 전환
   - [x] 자동 재시도 로직, 텍스트 후처리, Sandwich 기법 적용
-  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가 (Gemma 3 4B 기본값, Qwen, Llama 등 모델별 특징 표기)
-  - [x] 환경변수 NEXT_PUBLIC_UPSTAGE_API_KEY → NEXT_PUBLIC_OLLAMA_API_KEY 변경
+  - [x] 교사 페이지에 AI 모델 선택 드롭다운 UI 추가
+  - [x] 환경변수 `NEXT_PUBLIC_LOCAL_LLM_API_KEY` 기준으로 정리
 - [x] 로그인/인증 시스템 구현
   - [x] Firebase Authentication 설정 (이메일/비밀번호 + Google 소셜 로그인)
   - [x] Firestore 사용자 프로필 스키마 (교사/학부모/관리자 역할)
@@ -102,8 +102,8 @@
   - [x] `next.config.ts`에 SW 스코프 헤더 설정
 - [x] 콘솔 경고(`Link preload but not used`, `Tracking Prevention`) 분석 및 원인 파악
 - [x] `lib/notice-ai.ts`에서 동작이 불안정한 `GLM-4.7-Flash` 모델 제거
-- [x] AI 모델 목록에 `glm4:9b-chat-q8_0` 추가 및 모델별 비교 설명 보강
-- [x] `lib/notice-ai.ts`에서 `glm4:9b-chat-q8_0` 모델 제거
+- [x] AI 모델 목록 비교 설명 보강
+- [x] `lib/notice-ai.ts`에서 불안정한 추가 모델 제거
 - [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치)
 - [x] 교사 중복 가입 방지 로직 적용 (`checkTeacherDuplicate` 함수 기반 동일 학교/학년/반 검증)
 - [x] 전역 다국어(영어) 지원 (i18n) 통합 구현
@@ -192,8 +192,8 @@
 - [x] 최신 변경 사항 깃허브 업로드 (`main` 브랜치) - 2026-03-15
 - [x] 영문 개인정보처리방침 담당자 이름을 `KIM HYEONG HOON`으로 수정
 - [x] 알림장 AI를 일반 텍스트 다듬기 흐름으로 전환
-  - [x] `lib/notice-ai.ts` 모델 목록에서 `llama3.1:8b`, `gemma3:12b-it-q4_K_M` 제거
-  - [x] `lib/notice-ai.ts`에 `gemma4:E2B`, `gemma4:E4B` 추가 및 기본 모델을 `gemma4:E4B`로 변경
+  - [x] `lib/notice-ai.ts` 모델 목록을 운영 기준에 맞게 축소
+  - [x] 기본 모델을 `gemma4:e4b`로 변경
   - [x] AI 생성 로직을 마크다운 구조화/카테고리 분류 방식에서 "문장 다듬기 + 문체 통일 + 플랫 이모지 보강" 중심으로 전면 교체
   - [x] 신규 알림장 결과를 일반 텍스트로 표시하도록 `components/NoticePlainText.tsx` 추가 및 교사/학부모 화면 렌더링 전환
   - [x] `components/NoticeMarkdown.tsx` 제거 및 알림장 결과의 마크다운 미리보기 흐름 종료
@@ -208,3 +208,9 @@
   - [x] `components/NoticePlainText.tsx`에서 일반 텍스트 줄바꿈을 유지한 채 `http://`, `https://`, `www.` URL만 링크로 렌더링
   - [x] 문장 끝 구두점은 링크 바깥으로 분리하고, `www.` 주소는 `https://`를 붙여 새 탭으로 열리도록 처리
   - [x] 입력창 편집 흐름과 저장 포맷은 유지하고 `npm run lint`, `npm run build` 검증 완료
+- [x] 알림장 AI를 lm.alluser.site 기반 로컬 LM Studio 3개 모델 전용으로 정리
+  - [x] `lib/local-llm.ts`에 모델 목록, 기본값, 표시 라벨, 실제 요청 모델 매핑, max_tokens 규칙을 공통화
+  - [x] 모델 목록을 `gemma4:e4b`, `gemma4:e2b`, `lmstudio:gemma-4-26b-a4b-it-q4ks` 3개만 남기고 기본값을 `gemma4:e4b`로 고정
+  - [x] 모든 알림장 AI 요청을 `https://lm.alluser.site/v1/chat/completions`로 전송하고 `X-API-Key` 인증 헤더를 유지
+  - [x] 불필요한 외부 AI 패키지 의존성을 제거하고 모델 매핑 테스트를 추가
+  - [x] `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`, 금지 문자열 검색 검증 완료
