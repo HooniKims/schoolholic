@@ -112,15 +112,31 @@ async function generateWithRetry(params: {
     return content;
 }
 
-function formatNoticeDate(dateObj: Date): string {
-    const d = new Date(dateObj);
-    const days = ["일", "월", "화", "수", "목", "금", "토"];
-    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+function extractRequiredNumberFacts(text: string): string[] {
+    return Array.from(new Set(text.match(/\d+/g) ?? []));
+}
+
+function preservesRequiredNumberFacts(sourceText: string, resultText: string): boolean {
+    const requiredFacts = extractRequiredNumberFacts(sourceText);
+    return requiredFacts.every((fact) => resultText.includes(fact));
+}
+
+function buildOutputFormatInstruction(includeEnglishTranslation?: boolean): string[] {
+    return includeEnglishTranslation
+        ? [
+            "응답에는 한국어 알림장 본문, --- 구분선, 영어 번역 본문만 포함해 주세요.",
+            "학교에서 학부모에게 안내하는 톤의 영어 번역을 추가해서 다듬어줘. 형식은 한국어와 같게.",
+            "한국어 본문 첫 줄 앞과 영어 번역 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
+        ]
+        : [
+            "응답에는 학부모에게 보낼 알림장 본문만 포함해 주세요.",
+            "본문 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
+        ];
 }
 
 export async function summarizeNote(
     text: string,
-    dateObj: Date,
+    _dateObj: Date,
     model?: string,
     options: SummarizeNoteOptions = {}
 ): Promise<string> {
@@ -140,47 +156,66 @@ export async function summarizeNote(
         "",
         "규칙:",
         "- 사용자가 쓴 정보, 순서, 줄바꿈, 들여쓰기를 최대한 유지합니다.",
+        "- 원문의 숫자, 날짜, 시간, 요일은 반드시 유지합니다.",
         "- 어색한 문장만 자연스럽게 고칩니다.",
         "- 문체를 차분하고 통일된 한국어로 맞춥니다.",
         "- 새 정보, 새 일정, 새 금액, 새 제출물은 절대 추가하지 않습니다.",
         "- 제목, 소제목, 마크다운 표기, 번호 목록을 새로 만들지 않습니다.",
         "- 각 문단이나 항목 첫머리에 과하지 않은 플랫 이모지를 붙입니다.",
-        "- 첫 글자부터 최종 알림장 문구로 시작합니다.",
-        "- 결과는 일반 텍스트만 출력합니다.",
-        "- 응답에는 학부모에게 보낼 최종 알림장 본문만 포함합니다.",
-        "- 작업 설명은 포함하지 않습니다.",
-        "- Thinking Process, Analyze the Request, Refine, Final Formatting Check, Construct Final Output, Role, Goal, Output Requirement, Context, Date Reference 같은 분석/리파인/포맷 설명을 절대 출력하지 않습니다.",
+        "- 설명, 분석, 라벨, 제목 없이 최종 알림장 본문만 출력합니다.",
     ].join("\n");
 
     const prompt = [
         "아래 원문을 일반 텍스트로 조금만 다듬어 주세요.",
         "원문 구조와 정보는 유지하고, 문장만 자연스럽게 고쳐 주세요.",
         "각 문단이나 항목 첫머리에 간단한 플랫 이모지를 붙여 주세요.",
-        ...(options.includeEnglishTranslation
-            ? [
-                "응답에는 한국어 알림장 본문, --- 구분선, 영어 번역 본문만 포함해 주세요.",
-                "학교에서 학부모에게 안내하는 톤의 영어 번역을 추가해서 다듬어줘. 형식은 한국어와 같게.",
-                "한국어 본문 첫 줄 앞과 영어 번역 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
-            ]
-            : [
-                "응답에는 학부모에게 보낼 알림장 본문만 포함해 주세요.",
-                "본문 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
-            ]),
-        `작성 날짜 참고: ${formatNoticeDate(dateObj)}`,
+        ...buildOutputFormatInstruction(options.includeEnglishTranslation),
         "",
         "[원문]",
         text,
     ].join("\n");
 
     try {
-        const rawResult = await generateWithRetry({
+        let rawResult = await generateWithRetry({
             systemMessage,
             prompt,
             model: model || DEFAULT_MODEL,
             temperature: 0.2,
         });
 
-        return sanitizeNoticeContent(rawResult);
+        let sanitizedResult = sanitizeNoticeContent(rawResult);
+
+        if (!preservesRequiredNumberFacts(text, sanitizedResult)) {
+            const requiredFacts = extractRequiredNumberFacts(text);
+            const repairPrompt = [
+                "이전 출력에는 원문의 핵심 숫자/날짜/시간이 빠졌습니다.",
+                `반드시 포함해야 하는 원문 숫자: ${requiredFacts.join(", ")}`,
+                "새 정보나 작성 날짜를 추가하지 말고, 아래 원문의 정보만 유지해 다시 다듬어 주세요.",
+                "설명, 분석, 라벨 없이 최종 본문만 출력하세요.",
+                "각 문단이나 항목 첫머리에 간단한 플랫 이모지를 붙여 주세요.",
+                ...buildOutputFormatInstruction(options.includeEnglishTranslation),
+                "",
+                "[원문]",
+                text,
+                "",
+                "[이전 출력]",
+                sanitizedResult,
+            ].join("\n");
+
+            rawResult = await generateWithRetry({
+                systemMessage,
+                prompt: repairPrompt,
+                model: model || DEFAULT_MODEL,
+                temperature: 0.1,
+            });
+            sanitizedResult = sanitizeNoticeContent(rawResult);
+        }
+
+        if (!preservesRequiredNumberFacts(text, sanitizedResult)) {
+            throw new Error("AI 응답이 원문 핵심 정보를 유지하지 않았습니다. 다시 시도해주세요.");
+        }
+
+        return sanitizedResult;
     } catch (error) {
         console.error("Local LLM API Error:", error);
         throw error;

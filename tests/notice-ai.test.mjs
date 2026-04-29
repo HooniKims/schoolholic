@@ -126,14 +126,56 @@ test("summarizeNote adds English translation instructions when requested", async
         /학교에서 학부모에게 안내하는 톤의 영어 번역을 추가해서 다듬어줘\. 형식은 한국어와 같게\./
     );
     assert.match(requestBody.userPrompt, /한국어 알림장 본문, --- 구분선, 영어 번역 본문만 포함/);
-    assert.match(requestBody.systemMessage, /첫 글자부터 최종 알림장 문구로 시작/);
-    assert.match(requestBody.systemMessage, /Thinking Process/);
+    assert.match(requestBody.systemMessage, /원문의 숫자, 날짜, 시간, 요일/);
+    assert.match(requestBody.systemMessage, /설명, 분석, 라벨/);
     assert.match(requestBody.systemMessage, /플랫 이모지를 붙입니다/);
     assert.match(requestBody.userPrompt, /플랫 이모지를 붙여 주세요/);
     assert.doesNotMatch(requestBody.systemMessage, /붙여도 됩니다/);
+    assert.doesNotMatch(requestBody.userPrompt, /작성 날짜 참고/);
     assert.equal(requestBody.temperature, 0.2);
     assert.equal(
         result,
         "내일은 체육복을 입고 등교합니다.\n---\nStudents should wear PE uniforms to school tomorrow."
+    );
+});
+
+test("summarizeNote retries when the model drops source date or time facts", async () => {
+    const responses = [
+        "😊 안녕하세요.\n---\n😊 Hello.",
+        "📌 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.\n---\n📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today.",
+    ];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        new Date("2026-04-29T00:00:00+09:00"),
+        "gemma4:e2b",
+        { includeEnglishTranslation: true }
+    );
+    const retryBody = JSON.parse(calls[1].request.body);
+
+    assert.equal(calls.length, 2);
+    assert.match(retryBody.userPrompt, /원문의 핵심 숫자\/날짜\/시간이 빠졌습니다/);
+    assert.match(retryBody.userPrompt, /4, 30, 12/);
+    assert.equal(
+        result,
+        "📌 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.\n---\n📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today."
     );
 });

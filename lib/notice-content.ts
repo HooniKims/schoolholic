@@ -1,11 +1,11 @@
 const RESULT_PREFIX_PATTERN =
-    /^\s*(?:요약\s*(?:결과|내용)|다듬은\s*내용|수정본|정리\s*결과|최종\s*(?:결과|문안|출력(?:물)?(?:\s*생성)?|알림장\s*본문)|알림장\s*본문|결과)\s*[:：]\s*/i;
+    /^\s*(?:요약\s*(?:결과|내용)|다듬은\s*내용|수정본|정리\s*결과|최종\s*(?:결과|문안|출력(?:물)?(?:\s*생성)?|알림장\s*본문)|알림장\s*본문|결과|generation|generated\s*output)\s*[:：.]?\s*/i;
 
 const META_LINE_PATTERN =
-    /^(?:생각\s*과정(?:\s*시뮬레이션)?|시뮬레이션|목표\s*확인|형식\s*적용|내용\s*추출|상세\s*내용\s*정리|작성\s*계획|검토|검토\s*(?:결과|내용)|최종\s*출력(?:물\s*생성)?|최종\s*점검(?:\s*메시지)?|점검\s*메시지|작성\s*원칙\s*준수(?:\s*여부)?|규칙\s*준수|문체\s*(?:변화|수정|통일)|구조\s*화|구조화|작성\s*방식|수정\s*방향|분석|처리\s*(?:방식|내용)|변경\s*사항|출력\s*규칙|마크다운\s*기호\s*사용\s*금지)(?:\s*[:：].*)?$/i;
+    /^(?:생성|생각\s*과정(?:\s*시뮬레이션)?|시뮬레이션|목표\s*확인|형식\s*적용|내용\s*추출|상세\s*내용\s*정리|작성\s*계획|검토|검토\s*(?:결과|내용)|최종\s*출력(?:물\s*생성)?|최종\s*점검(?:\s*메시지)?|점검\s*메시지|작성\s*원칙\s*준수(?:\s*여부)?|규칙\s*준수|문체\s*(?:변화|수정|통일)|구조\s*화|구조화|작성\s*방식|수정\s*방향|분석|처리\s*(?:방식|내용)|변경\s*사항|출력\s*규칙|마크다운\s*기호\s*사용\s*금지|한국어\s*(?:본문\s*)?다듬기|영어\s*(?:번역\s*)?다듬기)(?:\s*[:：.]?.*)?$/i;
 
 const META_PHRASE_PATTERN =
-    /(?:생각\s*과정|시뮬레이션|목표\s*확인|형식\s*적용|내용\s*추출|상세\s*내용\s*정리|작성\s*계획|최종\s*출력|최종\s*점검|점검\s*메시지|작성\s*원칙\s*준수|규칙\s*준수|문체\s*변화|구조화|요청한\s*형식|작성한\s*결과입니다|마크다운\s*기호\s*사용\s*금지)/i;
+    /(?:생성|생각\s*과정|시뮬레이션|목표\s*확인|형식\s*적용|내용\s*추출|상세\s*내용\s*정리|작성\s*계획|최종\s*출력|최종\s*점검|점검\s*메시지|작성\s*원칙\s*준수|규칙\s*준수|문체\s*변화|구조화|요청한\s*형식|작성한\s*결과입니다|마크다운\s*기호\s*사용\s*금지|한국어\s*(?:본문\s*)?다듬기|영어\s*(?:번역\s*)?다듬기)/i;
 
 const ENGLISH_META_LINE_PATTERN =
     /^(?:thinking\s*process|analy[sz]e(?:\s+the)?(?:\s+request|\s+original\s+text)?|role|goal|output\s+requirement|context|date\s+reference|refine(?:\s+the)?(?:\s+korean\s+text|\s+english\s+translation)?|translate(?:\s+and\s+refine)?|final\s+formatting\s+check|construct\s+final\s+output|drafting\s+polish|self-correction|final\s+output|maintain\s+structure|add\s+flat\s+emojis|include\s+the\s+separator)(?:\b|[:：.]|$)/i;
@@ -20,6 +20,12 @@ const LEADING_PARENTHETICAL_PATTERN = /^\([^)]*\)\s*/;
 const INLINE_FINAL_DRAFTING_PREFIX_PATTERN =
     /^\s*\*?\s*\((?:drafting[^)]*final\s+response[^)]*|self-correction[^)]*)\)\*?\s*[:：]?\s*/i;
 const SEPARATOR_PATTERN = /^\s*---\s*$/;
+const BROKEN_LEADING_EMOJI_PATTERN = /^[\uFFFD]{1,4}\s*/;
+const ORPHAN_VARIATION_SELECTOR_PATTERN = /^[\uFE0E\uFE0F\s]+/;
+const EMOJI_PATTERN = /[\u{1F300}-\u{1FAFF}]/u;
+const KOREAN_INLINE_META_PREFIX_PATTERN = /^(?:생성|한국어\s*본문\s*다듬기|영어\s*번역\s*다듬기)\s*[:：.]?\s*/i;
+const KOREAN_REVIEW_PREAMBLE_PATTERN =
+    /(?:최종\s*검토|규칙\s*준수|정보\s*유지|형식\s*준수|이모지\s*사용|한국어\s*본문|영어\s*번(?:역|문)|구분하여\s*출력|본문\s*다듬기|번역\s*다듬기|출력)/;
 
 function stripLinePrefix(line: string): string {
     return line
@@ -50,8 +56,58 @@ function stripEnglishMetaPrefix(line: string): string | null {
     return null;
 }
 
-function stripOrphanVariationSelectors(line: string): string {
-    return line.replace(/^[\uFE0E\uFE0F\s]+/, "");
+function normalizeLeadingDecorations(line: string): string {
+    const withoutOrphanSelectors = line.replace(ORPHAN_VARIATION_SELECTOR_PATTERN, "");
+
+    if (!BROKEN_LEADING_EMOJI_PATTERN.test(withoutOrphanSelectors)) {
+        return withoutOrphanSelectors;
+    }
+
+    const content = withoutOrphanSelectors.replace(BROKEN_LEADING_EMOJI_PATTERN, "").trimStart();
+    return content ? `📌 ${content}` : "";
+}
+
+function stripLeadingEnglishPreambleBeforeKorean(line: string): string {
+    const hangulIndex = line.search(/[가-힣]/);
+    if (hangulIndex <= 0) {
+        return line;
+    }
+
+    const prefix = line.slice(0, hangulIndex);
+    const emojiMatch = prefix.match(EMOJI_PATTERN);
+    const startIndex = emojiMatch?.index ?? hangulIndex;
+
+    if (/^[\s"'()*.,:;!?A-Za-z-]+$/.test(prefix) || emojiMatch) {
+        return line.slice(startIndex).trimStart();
+    }
+
+    return line;
+}
+
+function stripReviewPreambleBeforeEmojiBody(line: string): string {
+    const emojiMatch = line.match(EMOJI_PATTERN);
+    if (emojiMatch?.index === undefined || emojiMatch.index <= 0) {
+        return line;
+    }
+
+    const prefix = line.slice(0, emojiMatch.index);
+    const suffix = line.slice(emojiMatch.index);
+
+    if (KOREAN_REVIEW_PREAMBLE_PATTERN.test(prefix) && /[가-힣]/.test(suffix)) {
+        return suffix.trimStart();
+    }
+
+    return line;
+}
+
+function stripKoreanInlineMetaPrefix(line: string): string {
+    let stripped = line;
+
+    while (KOREAN_INLINE_META_PREFIX_PATTERN.test(stripped)) {
+        stripped = stripped.replace(KOREAN_INLINE_META_PREFIX_PATTERN, "").trimStart();
+    }
+
+    return stripped;
 }
 
 function trimEmptyEdges(lines: string[]): string[] {
@@ -77,7 +133,11 @@ function stripInlineFinalPrefix(line: string): string {
     const maybeFinalOutput = stripEnglishMetaPrefix(stripped);
     const withoutFinalPrefix = maybeFinalOutput === null ? stripped : maybeFinalOutput;
 
-    return stripOrphanVariationSelectors(withoutFinalPrefix).trim();
+    return stripLeadingEnglishPreambleBeforeKorean(
+        stripReviewPreambleBeforeEmojiBody(
+            normalizeLeadingDecorations(stripKoreanInlineMetaPrefix(withoutFinalPrefix)).trim()
+        )
+    );
 }
 
 function extractBilingualFinalOutput(cleaned: string): string[] | null {
@@ -85,7 +145,10 @@ function extractBilingualFinalOutput(cleaned: string): string[] | null {
         .split("\n")
         .map((line) => stripResultPrefix(line))
         .filter((line): line is string => line !== null);
-    const separatorIndex = sourceLines.findIndex((line) => SEPARATOR_PATTERN.test(line));
+    const separatorIndex = sourceLines.reduce(
+        (lastIndex, line, index) => (SEPARATOR_PATTERN.test(line) ? index : lastIndex),
+        -1
+    );
 
     if (separatorIndex < 0) {
         return null;
@@ -93,6 +156,10 @@ function extractBilingualFinalOutput(cleaned: string): string[] | null {
 
     const koreanLines: string[] = [];
     for (let i = separatorIndex - 1; i >= 0; i -= 1) {
+        if (SEPARATOR_PATTERN.test(sourceLines[i])) {
+            break;
+        }
+
         const line = stripInlineFinalPrefix(sourceLines[i]);
         if (!line.trim()) {
             if (koreanLines.length) {
@@ -224,7 +291,7 @@ export function sanitizeNoticeContent(content?: string | null): string {
     return lines
         .join("\n")
         .split("\n")
-        .map((line) => stripOrphanVariationSelectors(line))
+        .map((line) => normalizeLeadingDecorations(line))
         .join("\n")
         .replace(/[ \t]+\n/g, "\n")
         .replace(/\n{3,}/g, "\n\n")

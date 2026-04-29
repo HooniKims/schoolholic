@@ -205,6 +205,139 @@ test("sanitizeNoticeContent extracts final bilingual notice from alternate Engli
     );
 });
 
+test("sanitizeNoticeContent removes generation label and restores broken leading emojis", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "Generation.�� 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다. 가정에서도 참고하여 주시기 바랍니다.",
+        "",
+        "---",
+        "",
+        "�� Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today. Please take note of this at home as well.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "📌 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다. 가정에서도 참고하여 주시기 바랍니다.",
+            "---",
+            "📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today. Please take note of this at home as well.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent removes inline English preamble before Korean bilingual body", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "Since I am forced to provide an output in the specified format, I will generate a response based on the structure requested. (This is the safest path.)😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "---",
+        "😊 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+            "---",
+            "😊 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent removes Korean generation labels before bilingual body", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "생성:",
+        "한국어 본문 다듬기.",
+        "영어 번역 다듬기.😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "---",
+        "😊 Tomorrow (Thursday, April 30th), students will also be dismissed at approximately 12 o'clock, just like today.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+            "---",
+            "😊 Tomorrow (Thursday, April 30th), students will also be dismissed at approximately 12 o'clock, just like today.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent removes Korean final-review preamble before emoji notice body", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "최종 검토: 규칙 준수 확인 (정보 유지, 이모지 사용, 형식 준수).😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "---",
+        "😊 Tomorrow (Thursday, April 30th), students will also be dismissed around 12 o'clock, just like today.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+            "---",
+            "😊 Tomorrow (Thursday, April 30th), students will also be dismissed around 12 o'clock, just like today.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent removes Korean output-format preamble before emoji notice body", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "한국어 본문과 영어 번문을 구분하여 출력한다.😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "---",
+        "😊 Tomorrow (Thursday, April 30th), students will also be dismissed at approximately 12 o'clock, just like today.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+            "---",
+            "😊 Tomorrow (Thursday, April 30th), students will also be dismissed at approximately 12 o'clock, just like today.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent uses the final separator when the model emits extra separators", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "한국어 본문 + 이모지",
+        "---",
+        "😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "---",
+        "😊 Tomorrow (Thursday, April 30th), students will also be dismissed around 12 o'clock, just like today.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+            "---",
+            "😊 Tomorrow (Thursday, April 30th), students will also be dismissed around 12 o'clock, just like today.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent removes standalone Korean polish labels before bilingual body", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "한국어 다듬기.",
+        "😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "---",
+        "😊 Tomorrow (Thursday, April 30th), students will also be dismissed around 12 o'clock, just like today.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+            "---",
+            "😊 Tomorrow (Thursday, April 30th), students will also be dismissed around 12 o'clock, just like today.",
+        ].join("\n")
+    );
+});
+
 test("NoticePlainText sanitizes saved notice content before rendering", async () => {
     const React = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");
