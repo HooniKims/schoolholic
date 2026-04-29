@@ -225,3 +225,9 @@
   - [x] 교사용 알림장 화면의 `AI로 다듬기` 버튼 위에 `영어 번역 추가` 체크박스 추가
   - [x] 체크 시 한국어 본문 아래 `---` 구분선과 같은 형식의 학부모 안내 톤 영어 번역을 함께 생성하도록 프롬프트 보강
   - [x] `tests/notice-content.test.mjs`, `tests/notice-ai.test.mjs`, `tests/local-llm.test.mjs` 회귀 테스트 보강
+- [x] 알림장 AI 출력 계약 및 영어 사고 과정 후처리 강화
+  - [x] 영어 번역 옵션 사용 시 한국어 본문, `---`, 영어 번역 본문만 출력하도록 프롬프트 계약 강화
+  - [x] `Thinking Process`, `Analyze the Request`, `Refine`, `Final Formatting Check` 등 영어 분석/리파인/포맷 설명 출력 금지 명시
+  - [x] 플랫 이모지 사용 규칙은 유지하되 고립된 이모지 표시 문자만 후처리에서 제거
+  - [x] `Output Requirement ... (---)` 문장의 괄호를 최종 본문으로 오인하던 후처리 문제 수정
+  - [x] 사용자가 보고한 영어 사고 과정 형식과 고립된 이모지 표시 문자를 제거하는 회귀 테스트 추가

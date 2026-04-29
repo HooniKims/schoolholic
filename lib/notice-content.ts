@@ -7,17 +7,185 @@ const META_LINE_PATTERN =
 const META_PHRASE_PATTERN =
     /(?:생각\s*과정|시뮬레이션|목표\s*확인|형식\s*적용|내용\s*추출|상세\s*내용\s*정리|작성\s*계획|최종\s*출력|최종\s*점검|점검\s*메시지|작성\s*원칙\s*준수|규칙\s*준수|문체\s*변화|구조화|요청한\s*형식|작성한\s*결과입니다|마크다운\s*기호\s*사용\s*금지)/i;
 
+const ENGLISH_META_LINE_PATTERN =
+    /^(?:thinking\s*process|analy[sz]e(?:\s+the)?(?:\s+request|\s+original\s+text)?|role|goal|output\s+requirement|context|date\s+reference|refine(?:\s+the)?(?:\s+korean\s+text|\s+english\s+translation)?|translate(?:\s+and\s+refine)?|final\s+formatting\s+check|construct\s+final\s+output|drafting\s+polish|self-correction|final\s+output|maintain\s+structure|add\s+flat\s+emojis|include\s+the\s+separator)(?:\b|[:：.]|$)/i;
+
+const ENGLISH_FINAL_OUTPUT_PATTERN =
+    /^(?:construct\s+final\s+output|final\s+output)(?:\b|[:：.]|$)/i;
+
+const ENGLISH_FINAL_OUTPUT_PREFIX_PATTERN =
+    /^(?:construct\s+final\s+output|final\s+output)(?:[:：.]\s*|\b)?/i;
+
+const LEADING_PARENTHETICAL_PATTERN = /^\([^)]*\)\s*/;
+const INLINE_FINAL_DRAFTING_PREFIX_PATTERN =
+    /^\s*\*?\s*\((?:drafting[^)]*final\s+response[^)]*|self-correction[^)]*)\)\*?\s*[:：]?\s*/i;
+const SEPARATOR_PATTERN = /^\s*---\s*$/;
+
 function stripLinePrefix(line: string): string {
     return line
         .replace(/^\s*#{1,6}\s+/, "")
-        .replace(/^\s*(?:[-*]\s*|\d+[.)]\s*)/, "")
+        .replace(/^\s*(?:[-*]\s*|>\s*|\d+[.)]\s*)/, "")
         .trim();
+}
+
+function stripEnglishMetaPrefix(line: string): string | null {
+    const stripped = stripLinePrefix(line);
+    if (!ENGLISH_META_LINE_PATTERN.test(stripped)) {
+        return line;
+    }
+
+    if (!ENGLISH_FINAL_OUTPUT_PATTERN.test(stripped)) {
+        return null;
+    }
+
+    let suffix = stripped.replace(ENGLISH_FINAL_OUTPUT_PREFIX_PATTERN, "").trim();
+    while (LEADING_PARENTHETICAL_PATTERN.test(suffix)) {
+        suffix = suffix.replace(LEADING_PARENTHETICAL_PATTERN, "").trim();
+    }
+
+    if (/[가-힣A-Za-z]/.test(suffix) && !ENGLISH_META_LINE_PATTERN.test(suffix)) {
+        return suffix;
+    }
+
+    return null;
+}
+
+function stripOrphanVariationSelectors(line: string): string {
+    return line.replace(/^[\uFE0E\uFE0F\s]+/, "");
+}
+
+function trimEmptyEdges(lines: string[]): string[] {
+    let start = 0;
+    let end = lines.length;
+
+    while (start < end && !lines[start].trim()) {
+        start += 1;
+    }
+
+    while (end > start && !lines[end - 1].trim()) {
+        end -= 1;
+    }
+
+    return lines.slice(start, end);
+}
+
+function stripInlineFinalPrefix(line: string): string {
+    const withoutResultPrefix = stripResultPrefix(line) ?? "";
+    const stripped = stripLinePrefix(withoutResultPrefix)
+        .replace(INLINE_FINAL_DRAFTING_PREFIX_PATTERN, "")
+        .trim();
+    const maybeFinalOutput = stripEnglishMetaPrefix(stripped);
+    const withoutFinalPrefix = maybeFinalOutput === null ? stripped : maybeFinalOutput;
+
+    return stripOrphanVariationSelectors(withoutFinalPrefix).trim();
+}
+
+function extractBilingualFinalOutput(cleaned: string): string[] | null {
+    const sourceLines = cleaned
+        .split("\n")
+        .map((line) => stripResultPrefix(line))
+        .filter((line): line is string => line !== null);
+    const separatorIndex = sourceLines.findIndex((line) => SEPARATOR_PATTERN.test(line));
+
+    if (separatorIndex < 0) {
+        return null;
+    }
+
+    const koreanLines: string[] = [];
+    for (let i = separatorIndex - 1; i >= 0; i -= 1) {
+        const line = stripInlineFinalPrefix(sourceLines[i]);
+        if (!line.trim()) {
+            if (koreanLines.length) {
+                break;
+            }
+            continue;
+        }
+
+        if (isMetaLine(line)) {
+            if (koreanLines.length) {
+                break;
+            }
+            continue;
+        }
+
+        if (!koreanLines.length && !/[가-힣]/.test(line)) {
+            continue;
+        }
+
+        koreanLines.unshift(line);
+    }
+
+    const englishLines = sourceLines
+        .slice(separatorIndex + 1)
+        .map((line) => stripInlineFinalPrefix(line))
+        .filter((line) => !isMetaLine(line));
+
+    const trimmedKorean = trimEmptyEdges(koreanLines);
+    const trimmedEnglish = trimEmptyEdges(englishLines);
+
+    if (!trimmedKorean.length || !trimmedEnglish.length) {
+        return null;
+    }
+
+    return [...trimmedKorean, "---", ...trimmedEnglish];
+}
+
+function buildSanitizedLines(cleaned: string): string[] {
+    const lines: string[] = [];
+    let sawEnglishMetaBlock = false;
+    let foundEnglishFinalOutput = false;
+
+    for (const rawLine of cleaned.split("\n")) {
+        const withoutResultPrefix = stripResultPrefix(rawLine);
+        if (withoutResultPrefix === null) {
+            continue;
+        }
+
+        const stripped = stripLinePrefix(withoutResultPrefix);
+        const isEnglishMeta = ENGLISH_META_LINE_PATTERN.test(stripped);
+
+        if (isEnglishMeta) {
+            sawEnglishMetaBlock = true;
+
+            const maybeBody = stripEnglishMetaPrefix(withoutResultPrefix);
+            if (maybeBody) {
+                foundEnglishFinalOutput = true;
+                lines.push(maybeBody);
+            } else if (ENGLISH_FINAL_OUTPUT_PATTERN.test(stripped)) {
+                foundEnglishFinalOutput = true;
+            }
+
+            continue;
+        }
+
+        if (sawEnglishMetaBlock && !foundEnglishFinalOutput) {
+            continue;
+        }
+
+        if (!isMetaLine(withoutResultPrefix)) {
+            lines.push(withoutResultPrefix);
+        }
+    }
+
+    if (sawEnglishMetaBlock && !foundEnglishFinalOutput && !lines.length) {
+        return cleaned
+            .split("\n")
+            .map((line) => stripResultPrefix(line))
+            .filter((line): line is string => line !== null)
+            .filter((line) => !isMetaLine(line));
+    }
+
+    return lines;
 }
 
 function isMetaLine(line: string): boolean {
     const stripped = stripLinePrefix(line);
     if (!stripped) {
         return false;
+    }
+
+    if (ENGLISH_META_LINE_PATTERN.test(stripped)) {
+        return true;
     }
 
     if (META_LINE_PATTERN.test(stripped)) {
@@ -51,13 +219,12 @@ export function sanitizeNoticeContent(content?: string | null): string {
     cleaned = cleaned.replace(/__(.*?)__/g, "$1");
     cleaned = cleaned.replace(/`([^`]+)`/g, "$1");
 
-    const lines = cleaned
-        .split("\n")
-        .map((line) => stripResultPrefix(line))
-        .filter((line): line is string => line !== null)
-        .filter((line) => !isMetaLine(line));
+    const lines = extractBilingualFinalOutput(cleaned) ?? buildSanitizedLines(cleaned);
 
     return lines
+        .join("\n")
+        .split("\n")
+        .map((line) => stripOrphanVariationSelectors(line))
         .join("\n")
         .replace(/[ \t]+\n/g, "\n")
         .replace(/\n{3,}/g, "\n\n")

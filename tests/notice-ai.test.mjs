@@ -125,7 +125,12 @@ test("summarizeNote adds English translation instructions when requested", async
         requestBody.userPrompt,
         /학교에서 학부모에게 안내하는 톤의 영어 번역을 추가해서 다듬어줘\. 형식은 한국어와 같게\./
     );
-    assert.match(requestBody.userPrompt, /한국어 알림장 본문 아래에 --- 구분선을 넣고/);
+    assert.match(requestBody.userPrompt, /한국어 알림장 본문, --- 구분선, 영어 번역 본문만 포함/);
+    assert.match(requestBody.systemMessage, /첫 글자부터 최종 알림장 문구로 시작/);
+    assert.match(requestBody.systemMessage, /Thinking Process/);
+    assert.match(requestBody.systemMessage, /플랫 이모지를 붙입니다/);
+    assert.match(requestBody.userPrompt, /플랫 이모지를 붙여 주세요/);
+    assert.doesNotMatch(requestBody.systemMessage, /붙여도 됩니다/);
     assert.equal(requestBody.temperature, 0.2);
     assert.equal(
         result,

@@ -74,6 +74,137 @@ test("sanitizeNoticeContent removes common final-check meta lines", () => {
     );
 });
 
+test("sanitizeNoticeContent removes English thinking-process blocks before bilingual notices", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "Thinking Process:",
+        "",
+        "1. Analyze the Request:",
+        "* Role: Assistant for polishing elementary school notification texts.",
+        "* Goal: Refine the provided Korean text.",
+        "* Output Requirement: The final output must include the polished Korean text.",
+        "",
+        "2. Analyze the Original Text (Korean):",
+        "> 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "",
+        "3. Refine the Korean Text:",
+        "* Drafting Polish: Keep the core message clear.",
+        "",
+        "6. Construct Final Output. (Self-Correction: Ensure the date context is handled correctly within the flow.) 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "가정에서도 참고하여 주시기 바랍니다.",
+        "---",
+        "Tomorrow (Thursday, April 30th), students will be dismissed at approximately 12:00 PM, the same as today.",
+        "Please keep this in mind at home.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+            "가정에서도 참고하여 주시기 바랍니다.",
+            "---",
+            "Tomorrow (Thursday, April 30th), students will be dismissed at approximately 12:00 PM, the same as today.",
+            "Please keep this in mind at home.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent removes English reasoning checklist and orphan emoji marker from bilingual notices", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "Thinking Process:",
+        "",
+        "1. Analyze the Request:",
+        "* Role: Assistant for polishing elementary school notification texts .",
+        "* Goal: Refine the provided Korean text to be more natural, calm, and consistent, while strictly maintaining the original information, structure, order, and line breaks.",
+        "* Output Requirement: The final output must include the polished Korean text, followed by a separator (---), and then an English translation in the same format.",
+        "* Context: School notification to parents.",
+        "* Date Reference: April 29, 2026 (Wednesday).",
+        "",
+        "2. Analyze the Original Text (Source):",
+        "> 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다. 가정에서는 참고해주시기 바랍니다.",
+        "",
+        "3. Refine the Korean Text (Polishing):",
+        "* The original is slightly stiff.",
+        "* *Drafting Polish:* Keep the core message: Students leave around 12:00 PM tomorrow.",
+        "",
+        "4. Refine the English Translation:",
+        "* The English translation must match the tone of a formal school notice.",
+        "",
+        "5. Final Formatting Check:",
+        "* Maintain structure.",
+        "* Add flat emojis (optional, but good for tone).",
+        "* Include the separator (---).",
+        "",
+        "6. Construct Final Output. (Self-Correction: Ensure no new information is added.)️ 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다. 가정에서도 참고하여 주시기 바랍니다.",
+        "---",
+        "️ Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today. Please take note of this at home as well.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다. 가정에서도 참고하여 주시기 바랍니다.",
+            "---",
+            "Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today. Please take note of this at home as well.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent keeps valid leading flat emojis", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "📌 내일(4월 30일 목요일)도 12시경에 학생들이 하교합니다.",
+        "---",
+        "📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM.",
+    ].join("\n");
+
+    assert.equal(sanitizeNoticeContent(raw), raw);
+});
+
+test("sanitizeNoticeContent extracts final bilingual notice from alternate English planning output", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        '*   Task: "조금 다듬기" (light refinement), not rewriting. Keep original structure, order, line breaks, and information.',
+        "*   Tone: Calm, consistent Korean.",
+        "*   Formatting Rules:",
+        "*   Maintain original structure/layout as much as possible.",
+        "*   Fix awkward sentences naturally.",
+        "*   Use calm, consistent Korean.",
+        "*   Add a flat emoji at the beginning of each paragraph/item.",
+        "*   Start directly with the final text (no preamble).",
+        "*   Output format: Korean text, separator (---), English translation.",
+        "",
+        "*   Original Text (Korean): 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "",
+        "*   The original sentence is grammatically correct but slightly stiff for a typical school notice.",
+        "",
+        "4.  Create English Translation:",
+        "*   The translation must match the refined Korean tone and content.",
+        "",
+        "5.  Apply Formatting Rules & Final Output Construction:",
+        "*   Add appropriate flat emojis.",
+        "*   Separate the final output into Korean, separator, and English sections.",
+        "",
+        "(Self-Correction during drafting): The request asks for both Korean and English versions following the same structure.",
+        "",
+        "6.  Final Review: Check against all constraints.",
+        "",
+        "*(Drafting the final response based on the analysis.)*😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "---",
+        "😊 Tomorrow (Thursday, April 30th), students will also be dismissed around 12:00 PM, the same as today.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "😊 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+            "---",
+            "😊 Tomorrow (Thursday, April 30th), students will also be dismissed around 12:00 PM, the same as today.",
+        ].join("\n")
+    );
+});
+
 test("NoticePlainText sanitizes saved notice content before rendering", async () => {
     const React = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");
