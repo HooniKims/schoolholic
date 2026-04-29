@@ -36,14 +36,18 @@ export const AVAILABLE_MODELS = [
     },
 ] as const satisfies readonly LocalModelOption[];
 
-export const DEFAULT_MODEL = "gemma4:e4b";
+export const DEFAULT_MODEL = "gemma4:e2b";
 
 export function getModelOptionLabel(model: LocalModelOption): string {
     return `${model.name} - ${model.description}`;
 }
 
 export function getLocalModelConfig(modelId?: string): LocalModelOption {
-    return AVAILABLE_MODELS.find((model) => model.id === modelId) || AVAILABLE_MODELS[0];
+    return (
+        AVAILABLE_MODELS.find((model) => model.id === modelId) ||
+        AVAILABLE_MODELS.find((model) => model.id === DEFAULT_MODEL) ||
+        AVAILABLE_MODELS[0]
+    );
 }
 
 function resolveMaxTokens(model: LocalModelOption, maxTokens?: number): number {

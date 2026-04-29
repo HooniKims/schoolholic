@@ -6,8 +6,13 @@ import {
     getLocalLlmApiKey,
     getModelOptionLabel,
 } from "./local-llm";
+import { sanitizeNoticeContent } from "./notice-content";
 
 export { AVAILABLE_MODELS, DEFAULT_MODEL, getModelOptionLabel };
+
+type SummarizeNoteOptions = {
+    includeEnglishTranslation?: boolean;
+};
 
 async function callLocalLlmAPI(
     systemMessage: string,
@@ -46,37 +51,6 @@ async function callLocalLlmAPI(
 
     const data = await res.json();
     return data.choices?.[0]?.message?.content || "";
-}
-
-function cleanMetaInfo(text: string): string {
-    if (!text) {
-        return text;
-    }
-
-    let cleaned = text.replace(/\r\n/g, "\n");
-
-    const resultMarker =
-        /(?:^|\n)\s*(?:요약\s*(?:결과|내용)|다듬은\s*내용|수정본|정리\s*결과|최종\s*(?:결과|문안)|결과)\s*[:：]\s*/gi;
-    const resultMatches = [...cleaned.matchAll(resultMarker)];
-    if (resultMatches.length > 0) {
-        const lastMarker = resultMatches[resultMatches.length - 1];
-        cleaned = cleaned.slice((lastMarker.index ?? 0) + lastMarker[0].length);
-    }
-
-    cleaned = cleaned.replace(/^\s*(다듬은 내용|수정본|정리 결과|요약 결과|요약 내용|최종 결과|최종 문안|결과)\s*[:：]\s*/i, "");
-    cleaned = cleaned
-        .split("\n")
-        .filter((line) => !/^\s*(?:[-*]\s*)?(?:규칙\s*준수|문체\s*(?:변화|수정|통일)|구조\s*화|작성\s*방식|수정\s*방향|검토\s*(?:결과|내용)|분석|처리\s*(?:방식|내용)|변경\s*사항|출력\s*규칙)\s*[:：]/i.test(line))
-        .join("\n");
-    cleaned = cleaned.replace(/\s*\([^)]*(글자|문체|검토|수정|다듬기)[^)]*\)\s*/gi, " ");
-    cleaned = cleaned.replace(/\s*\[(분석|검토|검증)[^\]]*\]\s*/gi, " ");
-    cleaned = cleaned.replace(/^\s*#{1,6}\s+/gm, "");
-    cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, "$1");
-    cleaned = cleaned.replace(/__(.*?)__/g, "$1");
-    cleaned = cleaned.replace(/`([^`]+)`/g, "$1");
-    cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
-
-    return cleaned.trim();
 }
 
 function endsWithCompleteSentence(text: string): boolean {
@@ -147,7 +121,8 @@ function formatNoticeDate(dateObj: Date): string {
 export async function summarizeNote(
     text: string,
     dateObj: Date,
-    model?: string
+    model?: string,
+    options: SummarizeNoteOptions = {}
 ): Promise<string> {
     if (!text) {
         return "";
@@ -171,15 +146,20 @@ export async function summarizeNote(
         "- 새 정보, 새 일정, 새 금액, 새 제출물은 절대 추가하지 않습니다.",
         "- 제목, 소제목, 마크다운 표기, 번호 목록을 새로 만들지 않습니다.",
         "- 결과는 일반 텍스트만 출력합니다.",
-        "- 규칙 준수 여부, 문체 변화, 구조화 방식, 분석, 검토 내용은 절대 출력하지 않습니다.",
-        "- 첫 글자부터 바로 학부모에게 보여줄 알림장 본문만 출력합니다.",
+        "- 응답에는 학부모에게 보낼 최종 알림장 본문만 포함합니다.",
     ].join("\n");
 
     const prompt = [
         "아래 원문을 일반 텍스트로 조금만 다듬어 주세요.",
         "원문 구조와 정보는 유지하고, 문장만 자연스럽게 고쳐 주세요.",
         "필요하면 줄 첫머리에 간단한 플랫 이모지를 붙여도 됩니다.",
-        "작성 방식이나 수정 설명은 쓰지 말고, 결과 본문만 출력해 주세요.",
+        "응답에는 학부모에게 보낼 알림장 본문만 포함해 주세요.",
+        ...(options.includeEnglishTranslation
+            ? [
+                "한국어 알림장 본문 아래에 --- 구분선을 넣고 영어 번역을 이어서 작성해 주세요.",
+                "학교에서 학부모에게 안내하는 톤의 영어 번역을 추가해서 다듬어줘. 형식은 한국어와 같게.",
+            ]
+            : []),
         `작성 날짜 참고: ${formatNoticeDate(dateObj)}`,
         "",
         "[원문]",
@@ -194,7 +174,7 @@ export async function summarizeNote(
             temperature: 0.2,
         });
 
-        return cleanMetaInfo(rawResult);
+        return sanitizeNoticeContent(rawResult);
     } catch (error) {
         console.error("Local LLM API Error:", error);
         throw error;

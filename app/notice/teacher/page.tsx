@@ -13,6 +13,7 @@ import { useAuth } from '@/components/AuthContext';
 import { NoticePlainText } from '@/components/NoticePlainText';
 import TouchScrollableTextarea from '@/components/TouchScrollableTextarea';
 import { useLanguage } from '@/lib/i18n';
+import { sanitizeNoticeContent } from '@/lib/notice-content';
 
 export default function NoticeTeacherPage() {
     const { user, loading: authLoading } = useAuth();
@@ -27,6 +28,7 @@ export default function NoticeTeacherPage() {
     const [statusMsg, setStatusMsg] = useState('');
     const [isEditingSummary, setIsEditingSummary] = useState(false);
     const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
+    const [includeEnglishTranslation, setIncludeEnglishTranslation] = useState(false);
 
     // List Management States
     const [showList, setShowList] = useState(false);
@@ -55,7 +57,7 @@ export default function NoticeTeacherPage() {
                 const data = await getNoteByDate(dateStr, user.uid);
                 if (data) {
                     setNote(data.originalContent || '');
-                    setSummary(data.summary || '');
+                    setSummary(sanitizeNoticeContent(data.summary));
                 }
             } catch (err) {
                 console.error(err);
@@ -80,7 +82,9 @@ export default function NoticeTeacherPage() {
         setStatusMsg(t('aiProcessing'));
 
         try {
-            const result = await summarizeNote(note, date, selectedModel);
+            const result = await summarizeNote(note, date, selectedModel, {
+                includeEnglishTranslation,
+            });
             setSummary(result);
             setIsEditingSummary(false);
             setStatusMsg(t('aiCompleted'));
@@ -101,7 +105,9 @@ export default function NoticeTeacherPage() {
         setIsSaving(true);
         try {
             const dateStr = format(date, 'yyyy-MM-dd');
-            await saveNote(dateStr, note, summary, user.uid);
+            const sanitizedSummary = sanitizeNoticeContent(summary);
+            await saveNote(dateStr, note, sanitizedSummary, user.uid);
+            setSummary(sanitizedSummary);
             setStatusMsg(t('savedSuccessfully'));
             setTimeout(() => setStatusMsg(''), 3000);
         } catch (err) {
@@ -137,7 +143,12 @@ export default function NoticeTeacherPage() {
         setIsFetching(true);
         try {
             const notes = await getAllNotes(user.uid);
-            const validNotes = notes.filter((n) => n.date);
+            const validNotes = notes
+                .filter((n) => n.date)
+                .map((n) => ({
+                    ...n,
+                    summary: sanitizeNoticeContent(n.summary),
+                }));
             setNoteList(validNotes);
             setSelectedNotes(new Set());
         } catch (err) {
@@ -182,7 +193,12 @@ export default function NoticeTeacherPage() {
             await Promise.all(deletePromises);
 
             const notes = await getAllNotes(user.uid);
-            const validNotes = notes.filter((n) => n.date);
+            const validNotes = notes
+                .filter((n) => n.date)
+                .map((n) => ({
+                    ...n,
+                    summary: sanitizeNoticeContent(n.summary),
+                }));
             setNoteList(validNotes);
             setSelectedNotes(new Set());
 
@@ -304,7 +320,17 @@ export default function NoticeTeacherPage() {
                                 </div>
                             )}
 
-                            <div className="flex gap-3 mt-4">
+                            <label className="mt-4 flex items-start gap-2 text-sm text-gray-700">
+                                <input
+                                    type="checkbox"
+                                    checked={includeEnglishTranslation}
+                                    onChange={(e) => setIncludeEnglishTranslation(e.target.checked)}
+                                    className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <span>{t('includeEnglishTranslation')}</span>
+                            </label>
+
+                            <div className="flex gap-3 mt-3">
                                 <button
                                     onClick={handleSummarize}
                                     disabled={isSummarizing || !note.trim() || isFetching}

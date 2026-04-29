@@ -1,7 +1,16 @@
 import { db } from './firebase';
 import { doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { sanitizeNoticeContent } from './notice-content';
 
 const NOTES_COLLECTION = 'notes';
+
+export type NoticeData = {
+    date: string;
+    originalContent?: string;
+    summary?: string;
+    updatedAt?: string;
+    teacherUid?: string | null;
+};
 
 /**
  * 교사별 알림장 문서 ID 생성
@@ -9,6 +18,13 @@ const NOTES_COLLECTION = 'notes';
  */
 function noteDocId(dateStr: string, teacherUid?: string): string {
     return teacherUid ? `${teacherUid}_${dateStr}` : dateStr;
+}
+
+function normalizeNoteData(data: NoticeData): NoticeData {
+    return {
+        ...data,
+        summary: sanitizeNoticeContent(data.summary),
+    };
 }
 
 // Save or Update a note (교사별 분리 저장)
@@ -19,7 +35,7 @@ export const saveNote = async (dateStr: string, originalContent: string, summary
         await setDoc(noteRef, {
             date: dateStr,
             originalContent,
-            summary,
+            summary: sanitizeNoticeContent(summary),
             teacherUid: teacherUid || null,
             updatedAt: new Date().toISOString()
         }, { merge: true });
@@ -38,7 +54,7 @@ export const getNoteByDate = async (dateStr: string, teacherUid?: string) => {
         const docSnap = await getDoc(noteRef);
 
         if (docSnap.exists()) {
-            return docSnap.data();
+            return normalizeNoteData(docSnap.data() as NoticeData);
         }
 
         // teacherUid로 조회 실패 시 레거시(날짜만) 문서도 확인
@@ -46,7 +62,7 @@ export const getNoteByDate = async (dateStr: string, teacherUid?: string) => {
             const legacyRef = doc(db, NOTES_COLLECTION, dateStr);
             const legacySnap = await getDoc(legacyRef);
             if (legacySnap.exists()) {
-                return legacySnap.data();
+                return normalizeNoteData(legacySnap.data() as NoticeData);
             }
         }
 
@@ -72,9 +88,9 @@ export const getAllNotes = async (teacherUid?: string) => {
 
         const querySnapshot = await getDocs(q);
 
-        const notes: { date: string; originalContent?: string; summary?: string; updatedAt?: string; teacherUid?: string }[] = [];
+        const notes: NoticeData[] = [];
         querySnapshot.forEach((docSnap) => {
-            notes.push(docSnap.data() as { date: string; originalContent?: string; summary?: string; updatedAt?: string; teacherUid?: string });
+            notes.push(normalizeNoteData(docSnap.data() as NoticeData));
         });
 
         // 최신 날짜순 정렬 (클라이언트 단 수행)

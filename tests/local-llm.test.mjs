@@ -34,7 +34,7 @@ function loadTsModule(relativePath) {
 test("local LLM models expose only the approved Gemma 4 options", () => {
     const { AVAILABLE_MODELS, DEFAULT_MODEL, getModelOptionLabel } = loadTsModule("lib/local-llm.ts");
 
-    assert.equal(DEFAULT_MODEL, "gemma4:e4b");
+    assert.equal(DEFAULT_MODEL, "gemma4:e2b");
     assert.deepEqual(
         plain(AVAILABLE_MODELS.map(({ id, name, description, requestModel }) => ({
             id,
@@ -109,6 +109,20 @@ test("local LLM requests use the LM Studio endpoint and mapped model names", () 
             { role: "user", content: "사용자 프롬프트" },
         ]);
     }
+});
+
+test("local LLM default model falls back to Gemma 4 E2B", () => {
+    const { buildChatCompletionBody, getLocalModelConfig } = loadTsModule("lib/local-llm.ts");
+
+    assert.equal(getLocalModelConfig().id, "gemma4:e2b");
+    assert.equal(getLocalModelConfig("missing-model").id, "gemma4:e2b");
+    assert.equal(
+        buildChatCompletionBody({
+            systemMessage: "system",
+            userPrompt: "prompt",
+        }).model,
+        "google/gemma-4-e2b"
+    );
 });
 
 test("local LLM max token floors are enforced for larger models", () => {

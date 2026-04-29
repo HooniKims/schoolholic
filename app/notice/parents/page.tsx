@@ -11,6 +11,7 @@ import { getNoteByDate } from '@/lib/notice-firebase';
 import { useAuth } from '@/components/AuthContext';
 import { NoticePlainText } from '@/components/NoticePlainText';
 import { useLanguage } from '@/lib/i18n';
+import { sanitizeNoticeContent } from '@/lib/notice-content';
 
 export default function NoticeParentsPage() {
     const { user, profile, loading: authLoading } = useAuth();
@@ -55,7 +56,7 @@ export default function NoticeParentsPage() {
                 const dateStr = format(date, 'yyyy-MM-dd');
                 const data = await getNoteByDate(dateStr, teacherUid);
                 if (data) {
-                    setSummary(data.summary || data.originalContent || '');
+                    setSummary(sanitizeNoticeContent(data.summary || data.originalContent || ''));
                 }
             } catch (err) {
                 console.error(err);

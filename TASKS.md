@@ -193,7 +193,7 @@
 - [x] 영문 개인정보처리방침 담당자 이름을 `KIM HYEONG HOON`으로 수정
 - [x] 알림장 AI를 일반 텍스트 다듬기 흐름으로 전환
   - [x] `lib/notice-ai.ts` 모델 목록을 운영 기준에 맞게 축소
-  - [x] 기본 모델을 `gemma4:e4b`로 변경
+  - [x] 기본 모델을 `gemma4:e2b`로 변경
   - [x] AI 생성 로직을 마크다운 구조화/카테고리 분류 방식에서 "문장 다듬기 + 문체 통일 + 플랫 이모지 보강" 중심으로 전면 교체
   - [x] 신규 알림장 결과를 일반 텍스트로 표시하도록 `components/NoticePlainText.tsx` 추가 및 교사/학부모 화면 렌더링 전환
   - [x] `components/NoticeMarkdown.tsx` 제거 및 알림장 결과의 마크다운 미리보기 흐름 종료
@@ -210,7 +210,7 @@
   - [x] 입력창 편집 흐름과 저장 포맷은 유지하고 `npm run lint`, `npm run build` 검증 완료
 - [x] 알림장 AI를 lm.alluser.site 기반 로컬 LM Studio 3개 모델 전용으로 정리
   - [x] `lib/local-llm.ts`에 모델 목록, 기본값, 표시 라벨, 실제 요청 모델 매핑, max_tokens 규칙을 공통화
-  - [x] 모델 목록을 `gemma4:e4b`, `gemma4:e2b`, `lmstudio:gemma-4-26b-a4b-it-q4ks` 3개만 남기고 기본값을 `gemma4:e4b`로 고정
+  - [x] 모델 목록을 `gemma4:e4b`, `gemma4:e2b`, `lmstudio:gemma-4-26b-a4b-it-q4ks` 3개만 남기고 기본값을 `gemma4:e2b`로 고정
   - [x] 모든 알림장 AI 요청을 `https://lm.alluser.site/v1/chat/completions`로 전송하고 `X-API-Key` 인증 헤더를 유지
   - [x] 불필요한 외부 AI 패키지 의존성을 제거하고 모델 매핑 테스트를 추가
   - [x] `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`, 금지 문자열 검색 검증 완료
@@ -219,3 +219,9 @@
   - [x] 모델이 `규칙 준수`, `문체 변화`, `구조화`, `요약 결과` 같은 메타 설명을 포함해도 후처리에서 제거하고 본문만 남기도록 보강
   - [x] `tests/notice-ai.test.mjs`를 추가해 요약 결과 본문만 반환되는지 회귀 테스트 구성
   - [x] `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` 검증 완료
+- [x] 알림장 AI 메타 설명 제거 및 영어 번역 옵션 추가
+  - [x] AI 응답과 저장된 기존 알림장 표시 경로에 공통 후처리 `sanitizeNoticeContent` 적용
+  - [x] 기본 모델을 `gemma4:e2b`로 변경하고 기본 fallback도 E2B로 맞춤
+  - [x] 교사용 알림장 화면의 `AI로 다듬기` 버튼 위에 `영어 번역 추가` 체크박스 추가
+  - [x] 체크 시 한국어 본문 아래 `---` 구분선과 같은 형식의 학부모 안내 톤 영어 번역을 함께 생성하도록 프롬프트 보강
+  - [x] `tests/notice-content.test.mjs`, `tests/notice-ai.test.mjs`, `tests/local-llm.test.mjs` 회귀 테스트 보강

@@ -3,7 +3,7 @@
 ## 요청
 
 - OpenAI를 사용하지 않고 알림장 AI 생성 기능을 로컬 LLM 전용 구조로 정리한다.
-- 모델 목록은 Gemma 4 계열 3개만 남기고 기본값은 `gemma4:e4b`로 고정한다.
+- 모델 목록은 Gemma 4 계열 3개만 남기고 기본값은 `gemma4:e2b`로 고정한다.
 - 모든 요청은 `https://lm.alluser.site/v1/chat/completions`로 보낸다.
 - 관련 테스트를 추가하고 검증한다.
 
@@ -18,7 +18,7 @@
 
 ## 현재 로컬 LLM 기준
 
-- 기본 모델: `gemma4:e4b`
+- 기본 모델: `gemma4:e2b`
 - endpoint: `https://lm.alluser.site/v1/chat/completions`
 - 인증 헤더: `X-API-Key`
 - 환경변수: `NEXT_PUBLIC_LOCAL_LLM_API_KEY`

@@ -23,6 +23,11 @@ function loadTsModule(relativePath, overrides = {}) {
         getLocalLlmApiKey: () => "test-key",
         getModelOptionLabel: (model) => model.name,
     };
+    const noticeContent = overrides.noticeContent ?? (
+        relativePath === "lib/notice-content.ts"
+            ? {}
+            : loadTsModule("lib/notice-content.ts", { noticeContent: {} })
+    );
     const sandbox = {
         module: cjsModule,
         exports: cjsModule.exports,
@@ -32,6 +37,9 @@ function loadTsModule(relativePath, overrides = {}) {
         require: (moduleName) => {
             if (moduleName === "./local-llm") {
                 return localLlm;
+            }
+            if (moduleName === "./notice-content") {
+                return noticeContent;
             }
 
             throw new Error(`Unexpected require: ${moduleName}`);
@@ -79,4 +87,48 @@ test("summarizeNote returns only the polished notice text when the model include
 
     assert.equal(calls.length, 1);
     assert.equal(result, "내일은 체육복을 입고 등교합니다.\n수학 익힘책 32쪽을 풀어 옵니다.");
+});
+
+test("summarizeNote adds English translation instructions when requested", async () => {
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: [
+                                    "내일은 체육복을 입고 등교합니다.",
+                                    "---",
+                                    "Students should wear PE uniforms to school tomorrow.",
+                                ].join("\n"),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "내일 체육복.",
+        new Date("2026-04-29T00:00:00+09:00"),
+        "gemma4:e2b",
+        { includeEnglishTranslation: true }
+    );
+    const requestBody = JSON.parse(calls[0].request.body);
+
+    assert.match(
+        requestBody.userPrompt,
+        /학교에서 학부모에게 안내하는 톤의 영어 번역을 추가해서 다듬어줘\. 형식은 한국어와 같게\./
+    );
+    assert.match(requestBody.userPrompt, /한국어 알림장 본문 아래에 --- 구분선을 넣고/);
+    assert.equal(requestBody.temperature, 0.2);
+    assert.equal(
+        result,
+        "내일은 체육복을 입고 등교합니다.\n---\nStudents should wear PE uniforms to school tomorrow."
+    );
 });

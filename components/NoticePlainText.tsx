@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { sanitizeNoticeContent } from "@/lib/notice-content";
 
 type NoticePlainTextProps = {
     content: string;
@@ -73,7 +74,7 @@ function renderLineWithLinks(line: string, lineIndex: number) {
 }
 
 export function NoticePlainText({ content, className }: NoticePlainTextProps) {
-    const lines = content.split("\n");
+    const lines = sanitizeNoticeContent(content).split("\n");
 
     return (
         <div
