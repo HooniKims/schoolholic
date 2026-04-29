@@ -214,3 +214,8 @@
   - [x] 모든 알림장 AI 요청을 `https://lm.alluser.site/v1/chat/completions`로 전송하고 `X-API-Key` 인증 헤더를 유지
   - [x] 불필요한 외부 AI 패키지 의존성을 제거하고 모델 매핑 테스트를 추가
   - [x] `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`, 금지 문자열 검색 검증 완료
+- [x] 알림장 AI 요약 결과의 작성 방식 설명 제거
+  - [x] `lib/notice-ai.ts` 프롬프트에 규칙 준수 여부, 문체 변화, 구조화 방식, 분석/검토 내용 출력 금지를 명시
+  - [x] 모델이 `규칙 준수`, `문체 변화`, `구조화`, `요약 결과` 같은 메타 설명을 포함해도 후처리에서 제거하고 본문만 남기도록 보강
+  - [x] `tests/notice-ai.test.mjs`를 추가해 요약 결과 본문만 반환되는지 회귀 테스트 구성
+  - [x] `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` 검증 완료
