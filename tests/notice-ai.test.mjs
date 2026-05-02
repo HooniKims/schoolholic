@@ -172,10 +172,99 @@ test("summarizeNote retries when the model drops source date or time facts", asy
     const retryBody = JSON.parse(calls[1].request.body);
 
     assert.equal(calls.length, 2);
-    assert.match(retryBody.userPrompt, /원문의 핵심 숫자\/날짜\/시간이 빠졌습니다/);
+    assert.match(retryBody.userPrompt, /원문 정보 누락, 메타 설명, 또는 깨진 문자/);
     assert.match(retryBody.userPrompt, /4, 30, 12/);
     assert.equal(
         result,
         "📌 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.\n---\n📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today."
     );
+});
+
+test("summarizeNote falls back to source text when all model attempts are corrupted", async () => {
+    const responses = [
+        "원문이 너무 비어있어 다듬을 내용이 없으므로, 형식만 유지하겠습니다.😊 ?? 5? 3? ??? 2?? ???? 10? ??? ???. ??? ????.",
+        "따라서, 원문을 최대한 존중하여 형식만 맞추겠습니다.📌 ?? 5? 3? ??? 2?? ???? 10? ??? ???. ??? ????.",
+        "최종 출력: 😊 ?? 5? 3? ??? 2?? ???? 10? ??? ???. ??? ????.",
+    ];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다. 연습장 가져오기.",
+        new Date("2026-05-02T00:00:00+09:00"),
+        "gemma4:e2b"
+    );
+
+    assert.equal(calls.length, 2);
+    assert.equal(
+        result,
+        "📌 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다. 연습장 가져오기."
+    );
+});
+
+test("summarizeNote retries with the default model when the selected model is unloaded", async () => {
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        localLlm: {
+            AVAILABLE_MODELS: [],
+            DEFAULT_MODEL: "gemma4:e2b",
+            LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT: "https://lm.alluser.site/v1/chat/completions",
+            buildChatCompletionBody: ({ modelId, ...params }) => ({
+                ...params,
+                model: modelId === "gemma4:e4b" ? "google/gemma-4-e4b" : "google/gemma-4-e2b",
+            }),
+            getLocalLlmApiKey: () => "test-key",
+            getModelOptionLabel: (model) => model.name,
+        },
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            if (calls.length === 1) {
+                return {
+                    ok: false,
+                    status: 503,
+                    json: async () => ({ error: "Model unloaded." }),
+                };
+            }
+
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: "📌 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다.",
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다.",
+        new Date("2026-05-02T00:00:00+09:00"),
+        "gemma4:e4b"
+    );
+
+    assert.equal(calls.length, 2);
+    assert.equal(JSON.parse(calls[0].request.body).model, "google/gemma-4-e4b");
+    assert.equal(JSON.parse(calls[1].request.body).model, "google/gemma-4-e2b");
+    assert.equal(result, "📌 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다.");
 });

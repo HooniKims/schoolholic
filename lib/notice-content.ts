@@ -26,6 +26,8 @@ const EMOJI_PATTERN = /[\u{1F300}-\u{1FAFF}]/u;
 const KOREAN_INLINE_META_PREFIX_PATTERN = /^(?:생성|한국어\s*본문\s*다듬기|영어\s*번역\s*다듬기)\s*[:：.]?\s*/i;
 const KOREAN_REVIEW_PREAMBLE_PATTERN =
     /(?:최종\s*검토|규칙\s*준수|정보\s*유지|형식\s*준수|이모지\s*사용|한국어\s*본문|영어\s*번(?:역|문)|구분하여\s*출력|본문\s*다듬기|번역\s*다듬기|출력)/;
+const KOREAN_FREEFORM_PREAMBLE_PATTERN =
+    /(?:따라서|원문|형식|지침|다듬|변경|유지|존중|진행|요청|비어\s*있어|추가\s*정보|출력|결과)/;
 
 function stripLinePrefix(line: string): string {
     return line
@@ -100,6 +102,22 @@ function stripReviewPreambleBeforeEmojiBody(line: string): string {
     return line;
 }
 
+function stripFreeformPreambleBeforeEmojiBody(line: string): string {
+    const emojiMatch = line.match(EMOJI_PATTERN);
+    if (emojiMatch?.index === undefined || emojiMatch.index <= 0) {
+        return line;
+    }
+
+    const prefix = line.slice(0, emojiMatch.index);
+    const suffix = line.slice(emojiMatch.index);
+
+    if (KOREAN_FREEFORM_PREAMBLE_PATTERN.test(prefix) && /[가-힣A-Za-z0-9?]/.test(suffix)) {
+        return suffix.trimStart();
+    }
+
+    return line;
+}
+
 function stripKoreanInlineMetaPrefix(line: string): string {
     let stripped = line;
 
@@ -134,8 +152,10 @@ function stripInlineFinalPrefix(line: string): string {
     const withoutFinalPrefix = maybeFinalOutput === null ? stripped : maybeFinalOutput;
 
     return stripLeadingEnglishPreambleBeforeKorean(
-        stripReviewPreambleBeforeEmojiBody(
-            normalizeLeadingDecorations(stripKoreanInlineMetaPrefix(withoutFinalPrefix)).trim()
+        stripFreeformPreambleBeforeEmojiBody(
+            stripReviewPreambleBeforeEmojiBody(
+                normalizeLeadingDecorations(stripKoreanInlineMetaPrefix(withoutFinalPrefix)).trim()
+            )
         )
     );
 }
@@ -292,6 +312,7 @@ export function sanitizeNoticeContent(content?: string | null): string {
         .join("\n")
         .split("\n")
         .map((line) => normalizeLeadingDecorations(line))
+        .map((line) => stripFreeformPreambleBeforeEmojiBody(stripReviewPreambleBeforeEmojiBody(line)))
         .join("\n")
         .replace(/[ \t]+\n/g, "\n")
         .replace(/\n{3,}/g, "\n\n")

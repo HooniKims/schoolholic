@@ -299,6 +299,34 @@ test("sanitizeNoticeContent removes Korean output-format preamble before emoji n
     );
 });
 
+test("sanitizeNoticeContent removes free-form Korean rationale before emoji notice body", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "따라서, 원문을 최대한 존중하여 형식만 맞추고 내용을 변경하지 않겠습니다. (지침에 따라 진행합니다.)🗓️ 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다.",
+        "---",
+        "🗓️ Tomorrow, Friday, May 3, students will take the level 10 dictation test at 2 PM.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "🗓️ 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다.",
+            "---",
+            "🗓️ Tomorrow, Friday, May 3, students will take the level 10 dictation test at 2 PM.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent removes empty-source rationale before emoji notice body", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = "원문이 너무 비어있어 다듬을 내용이 없으므로, 형식만 유지하겠습니다.😊 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다.";
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        "😊 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다."
+    );
+});
+
 test("sanitizeNoticeContent uses the final separator when the model emits extra separators", () => {
     const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
     const raw = [

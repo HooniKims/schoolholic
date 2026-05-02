@@ -14,6 +14,9 @@ type SummarizeNoteOptions = {
     includeEnglishTranslation?: boolean;
 };
 
+const EMOJI_PATTERN = /[\u{1F300}-\u{1FAFF}]/u;
+const QUESTION_MARK_NOISE_PATTERN = /(?:\?[\s?.!,:;]*){3,}/;
+
 async function callLocalLlmAPI(
     systemMessage: string,
     userPrompt: string,
@@ -116,9 +119,71 @@ function extractRequiredNumberFacts(text: string): string[] {
     return Array.from(new Set(text.match(/\d+/g) ?? []));
 }
 
+function extractRequiredKoreanFacts(text: string): string[] {
+    return Array.from(new Set(text.match(/[가-힣]{2,}/g) ?? []));
+}
+
 function preservesRequiredNumberFacts(sourceText: string, resultText: string): boolean {
     const requiredFacts = extractRequiredNumberFacts(sourceText);
     return requiredFacts.every((fact) => resultText.includes(fact));
+}
+
+function preservesRequiredKoreanFacts(sourceText: string, resultText: string): boolean {
+    const requiredFacts = extractRequiredKoreanFacts(sourceText);
+    if (!requiredFacts.length) {
+        return true;
+    }
+
+    return requiredFacts.every((fact) => resultText.includes(fact));
+}
+
+function hasUnexpectedQuestionMarkNoise(sourceText: string, resultText: string): boolean {
+    const sourceQuestionMarks = sourceText.match(/\?/g)?.length ?? 0;
+    const resultQuestionMarks = resultText.match(/\?/g)?.length ?? 0;
+
+    return resultQuestionMarks > sourceQuestionMarks + 2 || QUESTION_MARK_NOISE_PATTERN.test(resultText);
+}
+
+function isReliableNoticeResult(sourceText: string, resultText: string): boolean {
+    return (
+        preservesRequiredNumberFacts(sourceText, resultText) &&
+        preservesRequiredKoreanFacts(sourceText, resultText) &&
+        !hasUnexpectedQuestionMarkNoise(sourceText, resultText)
+    );
+}
+
+function addFallbackEmoji(line: string): string {
+    const trimmed = line.trim();
+    if (!trimmed) {
+        return "";
+    }
+
+    return EMOJI_PATTERN.test(trimmed.slice(0, 4)) ? trimmed : `📌 ${trimmed}`;
+}
+
+function buildFallbackNoticeText(sourceText: string, previousResult?: string): string {
+    const koreanBody = sourceText
+        .replace(/\r\n/g, "\n")
+        .split("\n")
+        .map(addFallbackEmoji)
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    const englishSection = previousResult?.split("\n---\n").slice(1).join("\n---\n").trim();
+
+    if (englishSection && /[A-Za-z]/.test(englishSection) && !hasUnexpectedQuestionMarkNoise(sourceText, englishSection)) {
+        return `${koreanBody}\n---\n${englishSection}`;
+    }
+
+    return koreanBody;
+}
+
+function getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
+function isRecoverableLocalLlmError(error: unknown): boolean {
+    return /model\s+unloaded|model\s+not\s+found|server\s+오류\s*\(5\d\d\)|fetch\s+failed|network/i.test(getErrorMessage(error));
 }
 
 function buildOutputFormatInstruction(includeEnglishTranslation?: boolean): string[] {
@@ -127,10 +192,12 @@ function buildOutputFormatInstruction(includeEnglishTranslation?: boolean): stri
             "응답에는 한국어 알림장 본문, --- 구분선, 영어 번역 본문만 포함해 주세요.",
             "학교에서 학부모에게 안내하는 톤의 영어 번역을 추가해서 다듬어줘. 형식은 한국어와 같게.",
             "한국어 본문 첫 줄 앞과 영어 번역 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
+            "첫 글자는 반드시 알림장 본문 이모지 또는 원문 첫 단어로 시작해야 합니다.",
         ]
         : [
             "응답에는 학부모에게 보낼 알림장 본문만 포함해 주세요.",
             "본문 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
+            "첫 글자는 반드시 알림장 본문 이모지 또는 원문 첫 단어로 시작해야 합니다.",
         ];
 }
 
@@ -175,22 +242,25 @@ export async function summarizeNote(
         text,
     ].join("\n");
 
-    try {
+    async function generateReliableResult(modelId: string): Promise<string> {
         let rawResult = await generateWithRetry({
             systemMessage,
             prompt,
-            model: model || DEFAULT_MODEL,
+            model: modelId,
             temperature: 0.2,
         });
 
         let sanitizedResult = sanitizeNoticeContent(rawResult);
 
-        if (!preservesRequiredNumberFacts(text, sanitizedResult)) {
+        if (!isReliableNoticeResult(text, sanitizedResult)) {
             const requiredFacts = extractRequiredNumberFacts(text);
+            const requiredKoreanFacts = extractRequiredKoreanFacts(text);
             const repairPrompt = [
-                "이전 출력에는 원문의 핵심 숫자/날짜/시간이 빠졌습니다.",
-                `반드시 포함해야 하는 원문 숫자: ${requiredFacts.join(", ")}`,
+                "이전 출력에는 원문 정보 누락, 메타 설명, 또는 깨진 문자가 포함되었습니다.",
+                requiredFacts.length ? `반드시 포함해야 하는 원문 숫자: ${requiredFacts.join(", ")}` : "",
+                requiredKoreanFacts.length ? `반드시 포함해야 하는 원문 한국어 단어: ${requiredKoreanFacts.join(", ")}` : "",
                 "새 정보나 작성 날짜를 추가하지 말고, 아래 원문의 정보만 유지해 다시 다듬어 주세요.",
+                "원문의 한국어를 물음표나 깨진 문자로 바꾸지 마세요.",
                 "설명, 분석, 라벨 없이 최종 본문만 출력하세요.",
                 "각 문단이나 항목 첫머리에 간단한 플랫 이모지를 붙여 주세요.",
                 ...buildOutputFormatInstruction(options.includeEnglishTranslation),
@@ -200,23 +270,46 @@ export async function summarizeNote(
                 "",
                 "[이전 출력]",
                 sanitizedResult,
-            ].join("\n");
+            ].filter(Boolean).join("\n");
 
             rawResult = await generateWithRetry({
                 systemMessage,
                 prompt: repairPrompt,
-                model: model || DEFAULT_MODEL,
+                model: modelId,
                 temperature: 0.1,
             });
             sanitizedResult = sanitizeNoticeContent(rawResult);
         }
 
-        if (!preservesRequiredNumberFacts(text, sanitizedResult)) {
-            throw new Error("AI 응답이 원문 핵심 정보를 유지하지 않았습니다. 다시 시도해주세요.");
+        if (!isReliableNoticeResult(text, sanitizedResult)) {
+            sanitizedResult = sanitizeNoticeContent(buildFallbackNoticeText(text, sanitizedResult));
         }
 
         return sanitizedResult;
+    }
+
+    const selectedModel = model || DEFAULT_MODEL;
+
+    try {
+        return await generateReliableResult(selectedModel);
     } catch (error) {
+        if (selectedModel !== DEFAULT_MODEL && isRecoverableLocalLlmError(error)) {
+            try {
+                return await generateReliableResult(DEFAULT_MODEL);
+            } catch (defaultModelError) {
+                if (isRecoverableLocalLlmError(defaultModelError)) {
+                    return sanitizeNoticeContent(buildFallbackNoticeText(text));
+                }
+
+                console.error("Local LLM default model fallback error:", defaultModelError);
+                throw defaultModelError;
+            }
+        }
+
+        if (isRecoverableLocalLlmError(error)) {
+            return sanitizeNoticeContent(buildFallbackNoticeText(text));
+        }
+
         console.error("Local LLM API Error:", error);
         throw error;
     }
