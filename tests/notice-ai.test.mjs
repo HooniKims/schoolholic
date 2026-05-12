@@ -249,10 +249,98 @@ test("summarizeNote retries when the model merely copies source fragments", asyn
     );
 });
 
+test("summarizeNote rewrites formal-looking source instead of accepting a copied result", async () => {
+    const source = [
+        "1. 친구의 외모나 특징을 비하하지 않도록 지도했습니다. 가정에서도 대화를 통해 서로간의 존중을 배울 수 있도록 지도 부탁드립니다.",
+        "",
+        "2. 전동 킥보드, 전기 자전거 등을 이용하는 학생들이 많이 있습니다. 이러한 전기 원동기는 면허와 함께 안전보호구 착용이 필수입니다. 가정에도 적극적인 관심과 지도 부탁드립니다.",
+    ].join("\n");
+    const finalNotice = [
+        "🤝 친구의 외모나 특징을 비하하지 않고 서로 존중하는 태도를 지닐 수 있도록 지도하였습니다. 가정에서도 대화를 통해 존중과 배려의 태도를 함께 지도해 주시기 바랍니다.",
+        "",
+        "🛴 전동 킥보드와 전기 자전거 등 전기 원동기 이용 시에는 면허 소지와 안전보호구 착용이 반드시 필요합니다. 학생들이 안전하게 생활할 수 있도록 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+    ].join("\n");
+    const responses = [source, source, finalNotice];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(source, new Date("2026-05-12T00:00:00+09:00"), "gemma4:e2b");
+    const finalRetryBody = JSON.parse(calls[2].request.body);
+
+    assert.equal(calls.length, 3);
+    assert.match(finalRetryBody.userPrompt, /원문을 그대로 반복/);
+    assert.doesNotMatch(result, /^1\./);
+    assert.match(result, /^🤝/);
+    assert.match(result, /존중과 배려|안전하게 생활/);
+    assert.equal(result, finalNotice);
+});
+
+test("summarizeNote retries when a numbered source item is omitted", async () => {
+    const source = [
+        "1. 친구의 외모나 특징을 비하하지 않도록 지도했습니다. 가정에서도 대화를 통해 서로간의 존중을 배울 수 있도록 지도 부탁드립니다.",
+        "",
+        "2. 전동 킥보드, 전기 자전거 등을 이용하는 학생들이 많이 있습니다. 이러한 전기 원동기는 면허와 함께 안전보호구 착용이 필수입니다. 가정에도 적극적인 관심과 지도 부탁드립니다.",
+    ].join("\n");
+    const finalNotice = [
+        "🤝 친구의 외모나 특징을 비하하지 않고 서로 존중하는 태도를 기를 수 있도록 지도하였습니다. 가정에서도 존중과 배려에 대해 함께 이야기해 주시기 바랍니다.",
+        "",
+        "🛴 전동 킥보드와 전기 자전거 등 전기 원동기 이용 시에는 면허 소지와 안전보호구 착용이 반드시 필요합니다. 학생들이 안전하게 생활할 수 있도록 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+    ].join("\n");
+    const responses = [
+        "😊 친구의 외모나 특징을 비하하지 않도록 지도하였습니다. 가정에서도 서로를 존중하는 마음을 배울 수 있도록 지도해 주시기를 부탁드립니다.",
+        finalNotice,
+    ];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(source, new Date("2026-05-12T00:00:00+09:00"), "gemma4:e2b");
+    const retryBody = JSON.parse(calls[1].request.body);
+
+    assert.equal(calls.length, 2);
+    assert.match(retryBody.userPrompt, /원문 정보 누락/);
+    assert.match(result, /킥보드/);
+    assert.match(result, /안전보호구/);
+    assert.doesNotMatch(result, /관심과 함께 지도/);
+    assert.equal(result, finalNotice);
+});
+
 test("summarizeNote retries when the model drops source date or time facts", async () => {
     const responses = [
         "😊 안녕하세요.",
         "📌 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "📌 내일(4월 30일 목요일)에도 학생들은 오늘과 동일하게 12시경 하교할 예정입니다.",
         "📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today.",
     ];
     const calls = [];
@@ -281,16 +369,18 @@ test("summarizeNote retries when the model drops source date or time facts", asy
         { includeEnglishTranslation: true }
     );
     const retryBody = JSON.parse(calls[1].request.body);
-    const translationBody = JSON.parse(calls[2].request.body);
+    const finalRetryBody = JSON.parse(calls[2].request.body);
+    const translationBody = JSON.parse(calls[3].request.body);
 
-    assert.equal(calls.length, 3);
+    assert.equal(calls.length, 4);
     assert.match(retryBody.userPrompt, /원문 정보 누락, 메타 설명, 깨진 문자/);
     assert.match(retryBody.userPrompt, /4, 30, 12/);
+    assert.match(finalRetryBody.userPrompt, /원문을 그대로 반복/);
     assert.match(translationBody.userPrompt, /아래 한국어 알림장 본문을 영어로 번역/);
-    assert.match(translationBody.userPrompt, /📌 내일\(4월 30일 목요일\)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다\./);
+    assert.match(translationBody.userPrompt, /📌 내일\(4월 30일 목요일\)에도 학생들은 오늘과 동일하게 12시경 하교할 예정입니다\./);
     assert.equal(
         result,
-        "📌 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.\n---\n📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today."
+        "📌 내일(4월 30일 목요일)에도 학생들은 오늘과 동일하게 12시경 하교할 예정입니다.\n---\n📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today."
     );
 });
 
