@@ -218,18 +218,14 @@ function isRecoverableLocalLlmError(error: unknown): boolean {
 }
 
 function buildOutputFormatInstruction(includeEnglishTranslation?: boolean): string[] {
-    return includeEnglishTranslation
-        ? [
-            "응답에는 한국어 알림장 본문, --- 구분선, 영어 번역 본문만 포함해 주세요.",
-            "학교에서 학부모에게 안내하는 톤의 영어 번역을 추가해서 다듬어줘. 형식은 한국어와 같게.",
-            "한국어 본문 첫 줄 앞과 영어 번역 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
-            "첫 글자는 반드시 알림장 본문 이모지 또는 원문 첫 단어로 시작해야 합니다.",
-        ]
-        : [
-            "응답에는 학부모에게 보낼 알림장 본문만 포함해 주세요.",
-            "본문 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
-            "첫 글자는 반드시 알림장 본문 이모지 또는 원문 첫 단어로 시작해야 합니다.",
-        ];
+    return [
+        "응답에는 학부모에게 보낼 한국어 알림장 본문만 포함해 주세요.",
+        "본문 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
+        "첫 글자는 반드시 알림장 본문 이모지 또는 원문 첫 단어로 시작해야 합니다.",
+        ...(includeEnglishTranslation
+            ? ["다른 언어 출력은 이후 별도 단계에서 처리하므로 여기서는 한국어 본문만 쓰세요."]
+            : []),
+    ];
 }
 
 export async function summarizeNote(
@@ -274,7 +270,7 @@ export async function summarizeNote(
         text,
     ].join("\n");
 
-    async function generateReliableResult(modelId: string): Promise<string> {
+    async function generateReliableKoreanResult(modelId: string): Promise<string> {
         let rawResult = await generateWithRetry({
             systemMessage,
             prompt,
@@ -321,14 +317,56 @@ export async function summarizeNote(
         return sanitizedResult;
     }
 
+    async function generateEnglishTranslation(koreanBody: string, modelId: string): Promise<string> {
+        const translationSystemMessage = [
+            "You translate Korean elementary school notices for parents.",
+            "Output only the English translation body.",
+            "Do not include analysis, labels, headings, markdown, or a separator.",
+            "Keep the same line order and the same flat emoji at the beginning of each line.",
+            "Use a calm, official school notice tone.",
+        ].join("\n");
+        const translationPrompt = [
+            "아래 한국어 알림장 본문을 영어로 번역해 주세요.",
+            "한국어 줄 수와 순서를 유지하고, 각 줄 첫머리의 이모지도 유지하세요.",
+            "--- 구분선은 쓰지 마세요.",
+            "설명, 분석, 라벨 없이 영어 번역 본문만 출력하세요.",
+            "",
+            "[한국어 알림장 본문]",
+            koreanBody,
+        ].join("\n");
+        const rawTranslation = await generateWithRetry({
+            systemMessage: translationSystemMessage,
+            prompt: translationPrompt,
+            model: modelId,
+            temperature: 0.1,
+        });
+
+        return sanitizeNoticeContent(rawTranslation)
+            .split("\n")
+            .filter((line) => !/^---\s*$/.test(line))
+            .join("\n")
+            .trim();
+    }
+
+    async function generateNoticeResult(modelId: string): Promise<string> {
+        const koreanResult = await generateReliableKoreanResult(modelId);
+
+        if (!options.includeEnglishTranslation) {
+            return koreanResult;
+        }
+
+        const englishResult = await generateEnglishTranslation(koreanResult, modelId);
+        return sanitizeNoticeContent(`${koreanResult}\n---\n${englishResult}`);
+    }
+
     const selectedModel = model || DEFAULT_MODEL;
 
     try {
-        return await generateReliableResult(selectedModel);
+        return await generateNoticeResult(selectedModel);
     } catch (error) {
         if (selectedModel !== DEFAULT_MODEL && isRecoverableLocalLlmError(error)) {
             try {
-                return await generateReliableResult(DEFAULT_MODEL);
+                return await generateNoticeResult(DEFAULT_MODEL);
             } catch (defaultModelError) {
                 if (isRecoverableLocalLlmError(defaultModelError)) {
                     return sanitizeNoticeContent(buildFallbackNoticeText(text));

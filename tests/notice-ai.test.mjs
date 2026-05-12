@@ -90,6 +90,10 @@ test("summarizeNote returns only the polished notice text when the model include
 });
 
 test("summarizeNote adds English translation instructions when requested", async () => {
+    const responses = [
+        "👕 내일은 체육복을 입고 등교해 주세요.",
+        "👕 Please have your child wear PE clothes to school tomorrow.",
+    ];
     const calls = [];
     const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
         fetch: async (url, request) => {
@@ -100,11 +104,7 @@ test("summarizeNote adds English translation instructions when requested", async
                     choices: [
                         {
                             message: {
-                                content: [
-                                    "내일은 체육복을 입고 등교합니다.",
-                                    "---",
-                                    "Students should wear PE uniforms to school tomorrow.",
-                                ].join("\n"),
+                                content: responses.shift(),
                             },
                         },
                     ],
@@ -119,26 +119,88 @@ test("summarizeNote adds English translation instructions when requested", async
         "gemma4:e2b",
         { includeEnglishTranslation: true }
     );
-    const requestBody = JSON.parse(calls[0].request.body);
+    const polishBody = JSON.parse(calls[0].request.body);
+    const translationBody = JSON.parse(calls[1].request.body);
 
-    assert.match(
-        requestBody.userPrompt,
-        /학교에서 학부모에게 안내하는 톤의 영어 번역을 추가해서 다듬어줘\. 형식은 한국어와 같게\./
-    );
-    assert.match(requestBody.userPrompt, /한국어 알림장 본문, --- 구분선, 영어 번역 본문만 포함/);
-    assert.match(requestBody.systemMessage, /원문의 숫자, 날짜, 시간, 요일/);
-    assert.match(requestBody.systemMessage, /설명, 분석, 라벨/);
-    assert.match(requestBody.systemMessage, /플랫 이모지를 붙입니다/);
-    assert.match(requestBody.systemMessage, /공식적인 가정통신문 문체/);
-    assert.match(requestBody.systemMessage, /짧은 메모를 그대로 베껴 쓰지 말고/);
-    assert.match(requestBody.userPrompt, /플랫 이모지를 붙여 주세요/);
-    assert.match(requestBody.userPrompt, /학부모에게 전달할 공식 통신문 문체/);
-    assert.doesNotMatch(requestBody.systemMessage, /붙여도 됩니다/);
-    assert.doesNotMatch(requestBody.userPrompt, /작성 날짜 참고/);
-    assert.equal(requestBody.temperature, 0.2);
+    assert.equal(calls.length, 2);
+    assert.match(polishBody.systemMessage, /원문의 숫자, 날짜, 시간, 요일/);
+    assert.match(polishBody.systemMessage, /설명, 분석, 라벨/);
+    assert.match(polishBody.systemMessage, /플랫 이모지를 붙입니다/);
+    assert.match(polishBody.systemMessage, /공식적인 가정통신문 문체/);
+    assert.match(polishBody.systemMessage, /짧은 메모를 그대로 베껴 쓰지 말고/);
+    assert.match(polishBody.userPrompt, /플랫 이모지를 붙여 주세요/);
+    assert.match(polishBody.userPrompt, /학부모에게 전달할 공식 통신문 문체/);
+    assert.match(polishBody.userPrompt, /한국어 본문만 쓰세요/);
+    assert.doesNotMatch(polishBody.userPrompt, /영어 번역/);
+    assert.doesNotMatch(polishBody.systemMessage, /붙여도 됩니다/);
+    assert.doesNotMatch(polishBody.userPrompt, /작성 날짜 참고/);
+    assert.equal(polishBody.temperature, 0.2);
+    assert.match(translationBody.userPrompt, /아래 한국어 알림장 본문을 영어로 번역/);
+    assert.match(translationBody.userPrompt, /👕 내일은 체육복을 입고 등교해 주세요\./);
+    assert.match(translationBody.systemMessage, /official school notice tone/);
+    assert.equal(translationBody.temperature, 0.1);
     assert.equal(
         result,
-        "내일은 체육복을 입고 등교합니다.\n---\nStudents should wear PE uniforms to school tomorrow."
+        "👕 내일은 체육복을 입고 등교해 주세요.\n---\n👕 Please have your child wear PE clothes to school tomorrow."
+    );
+});
+
+test("summarizeNote generates Korean polish first, then translates it to English", async () => {
+    const responses = [
+        [
+            "👕 내일은 체육복을 입고 등교해 주세요.",
+            "📚 수학 익힘책 32쪽을 풀어오도록 지도 부탁드립니다.",
+            "📝 가정통신문을 확인해 주시기 바랍니다.",
+        ].join("\n"),
+        [
+            "👕 Please have your child wear PE clothes to school tomorrow.",
+            "📚 Please guide your child to complete page 32 of the math workbook.",
+            "📝 Please check the school notice sent home.",
+        ].join("\n"),
+    ];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "내일 체육복. 수학 익힘책 32쪽 풀기. 가정통신문 확인.",
+        new Date("2026-05-12T00:00:00+09:00"),
+        "gemma4:e2b",
+        { includeEnglishTranslation: true }
+    );
+    const firstBody = JSON.parse(calls[0].request.body);
+    const secondBody = JSON.parse(calls[1].request.body);
+
+    assert.equal(calls.length, 2);
+    assert.doesNotMatch(firstBody.userPrompt, /영어 번역/);
+    assert.match(secondBody.userPrompt, /아래 한국어 알림장 본문을 영어로 번역/);
+    assert.match(secondBody.userPrompt, /👕 내일은 체육복을 입고 등교해 주세요\./);
+    assert.equal(
+        result,
+        [
+            "👕 내일은 체육복을 입고 등교해 주세요.",
+            "📚 수학 익힘책 32쪽을 풀어오도록 지도 부탁드립니다.",
+            "📝 가정통신문을 확인해 주시기 바랍니다.",
+            "---",
+            "👕 Please have your child wear PE clothes to school tomorrow.",
+            "📚 Please guide your child to complete page 32 of the math workbook.",
+            "📝 Please check the school notice sent home.",
+        ].join("\n")
     );
 });
 
@@ -189,8 +251,9 @@ test("summarizeNote retries when the model merely copies source fragments", asyn
 
 test("summarizeNote retries when the model drops source date or time facts", async () => {
     const responses = [
-        "😊 안녕하세요.\n---\n😊 Hello.",
-        "📌 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.\n---\n📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today.",
+        "😊 안녕하세요.",
+        "📌 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.",
+        "📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today.",
     ];
     const calls = [];
     const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
@@ -218,10 +281,13 @@ test("summarizeNote retries when the model drops source date or time facts", asy
         { includeEnglishTranslation: true }
     );
     const retryBody = JSON.parse(calls[1].request.body);
+    const translationBody = JSON.parse(calls[2].request.body);
 
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 3);
     assert.match(retryBody.userPrompt, /원문 정보 누락, 메타 설명, 깨진 문자/);
     assert.match(retryBody.userPrompt, /4, 30, 12/);
+    assert.match(translationBody.userPrompt, /아래 한국어 알림장 본문을 영어로 번역/);
+    assert.match(translationBody.userPrompt, /📌 내일\(4월 30일 목요일\)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다\./);
     assert.equal(
         result,
         "📌 내일(4월 30일 목요일)도 오늘과 마찬가지로 12시경에 학생들이 하교합니다.\n---\n📌 Tomorrow (Thursday, April 30th), students will be dismissed around 12:00 PM, the same as today."
