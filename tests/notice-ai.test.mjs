@@ -86,7 +86,7 @@ test("summarizeNote returns only the polished notice text when the model include
     const result = await summarizeNote("내일 체육복. 수학 익힘책 32쪽.", new Date("2026-04-29T00:00:00+09:00"));
 
     assert.equal(calls.length, 1);
-    assert.equal(result, "내일은 체육복을 입고 등교합니다.\n수학 익힘책 32쪽을 풀어 옵니다.");
+    assert.equal(result, "🎒 내일은 체육복을 입고 등교합니다.\n📚 수학 익힘책 32쪽을 풀어 옵니다.");
 });
 
 test("summarizeNote adds English translation instructions when requested", async () => {
@@ -202,6 +202,140 @@ test("summarizeNote generates Korean polish first, then translates it to English
             "📝 Please check the school notice sent home.",
         ].join("\n")
     );
+});
+
+test("summarizeNote repairs English translation when the first Korean line is omitted", async () => {
+    const koreanNotice = [
+        "🤝 친구의 외모나 특징을 비하하지 않도록 지도하였습니다. 가정에서도 서로를 존중하는 마음을 배울 수 있도록 지도해 주시기 바랍니다.",
+        "🛴 전동 킥보드와 전기 자전거 이용 시 면허와 안전보호구 착용이 필요합니다. 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+    ].join("\n");
+    const repairedEnglish = [
+        "🤝 We have guided students not to belittle friends' appearance or characteristics. Please continue helping them learn mutual respect at home.",
+        "🛴 A license and safety protective gear are required when using electric kickboards or electric bicycles. Please provide active guidance at home.",
+    ].join("\n");
+    const responses = [
+        koreanNotice,
+        "🛴 A license and safety protective gear are required when using electric kickboards or electric bicycles. Please provide active guidance at home.",
+        repairedEnglish,
+    ];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "친구의 외모나 특징을 비하하지 않도록 지도했습니다.\n전동 킥보드 이용 시 안전보호구 착용이 필요합니다.",
+        new Date("2026-05-12T00:00:00+09:00"),
+        "gemma4:e2b",
+        { includeEnglishTranslation: true }
+    );
+    const repairBody = JSON.parse(calls[2].request.body);
+
+    assert.equal(calls.length, 3);
+    assert.match(repairBody.userPrompt, /줄이 누락/);
+    assert.equal(result, `${koreanNotice}\n---\n${repairedEnglish}`);
+});
+
+test("summarizeNote uses safe English fallback if translation still omits a line", async () => {
+    const koreanNotice = [
+        "🤝 친구의 외모나 특징을 비하하지 않도록 지도하였습니다. 가정에서도 서로를 존중하는 마음을 배울 수 있도록 지도해 주시기 바랍니다.",
+        "🛴 전동 킥보드와 전기 자전거 이용 시 면허와 안전보호구 착용이 필요합니다. 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+    ].join("\n");
+    const responses = [
+        koreanNotice,
+        "🛴 A license and safety protective gear are required when using electric kickboards or electric bicycles. Please provide active guidance at home.",
+        "🛴 A license and safety protective gear are required when using electric kickboards or electric bicycles. Please provide active guidance at home.",
+    ];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "친구의 외모나 특징을 비하하지 않도록 지도했습니다.\n전동 킥보드 이용 시 안전보호구 착용이 필요합니다.",
+        new Date("2026-05-12T00:00:00+09:00"),
+        "gemma4:e2b",
+        { includeEnglishTranslation: true }
+    );
+
+    assert.equal(calls.length, 3);
+    assert.match(result, /We have guided students not to belittle friends' appearance or characteristics/);
+    assert.match(result, /Students using electric scooters or electric bicycles must have the required license/);
+    assert.equal(result.split("\n---\n")[1].split("\n").length, 2);
+});
+
+test("summarizeNote keeps a non-emoji first Korean line in bilingual output", async () => {
+    const responses = [
+        [
+            "친구의 외모나 특징을 비하하지 않도록 지도하였습니다. 가정에서도 서로를 존중하는 마음을 배울 수 있도록 지도해 주시기 바랍니다.",
+            "🛴 전동 킥보드와 전기 자전거 이용 시 면허와 안전보호구 착용이 필요합니다. 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+        ].join("\n"),
+        [
+            "🤝 We have guided students not to belittle friends' appearance or characteristics. Please continue helping them learn mutual respect at home.",
+            "🛴 A license and safety protective gear are required when using electric kickboards or electric bicycles. Please provide active guidance at home.",
+        ].join("\n"),
+    ];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "친구의 외모나 특징을 비하하지 않도록 지도했습니다.\n전동 킥보드 이용 시 안전보호구 착용이 필요합니다.",
+        new Date("2026-05-12T00:00:00+09:00"),
+        "gemma4:e2b",
+        { includeEnglishTranslation: true }
+    );
+    const [ko, en] = result.split("\n---\n");
+
+    assert.equal(calls.length, 2);
+    assert.match(ko, /^🤝/);
+    assert.match(ko, /친구의 외모나 특징/);
+    assert.match(ko, /전동 킥보드/);
+    assert.equal(ko.split("\n").length, 2);
+    assert.equal(en.split("\n").length, 2);
 });
 
 test("summarizeNote retries when the model merely copies source fragments", async () => {
@@ -333,6 +467,52 @@ test("summarizeNote retries when a numbered source item is omitted", async () =>
     assert.match(result, /킥보드/);
     assert.match(result, /안전보호구/);
     assert.doesNotMatch(result, /관심과 함께 지도/);
+    assert.equal(result, finalNotice);
+});
+
+test("summarizeNote retries when a numbered source item is split into extra output lines", async () => {
+    const source = [
+        "1. 친구의 외모나 특징을 비하하지 않도록 지도했습니다. 가정에서도 대화를 통해 서로간의 존중을 배울 수 있도록 지도 부탁드립니다.",
+        "",
+        "2. 전동 킥보드, 전기 자전거 등을 이용하는 학생들이 많이 있습니다. 이러한 전기 원동기는 면허와 함께 안전보호구 착용이 필수입니다. 가정에도 적극적인 관심과 지도 부탁드립니다.",
+    ].join("\n");
+    const finalNotice = [
+        "🤝 친구의 외모나 특징을 비하하지 않고 서로 존중하는 태도를 기를 수 있도록 지도하였습니다. 가정에서도 존중과 배려에 대해 함께 이야기해 주시기 바랍니다.",
+        "🛴 전동 킥보드와 전기 자전거 등 전기 원동기 이용 시에는 면허 소지와 안전보호구 착용이 반드시 필요합니다. 학생들이 안전하게 생활할 수 있도록 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+    ].join("\n");
+    const responses = [
+        [
+            "🤝 친구의 외모나 특징을 비하하지 않도록 지도하였습니다.",
+            "가정에서도 서로를 존중하는 마음을 배울 수 있도록 지도해 주시기 바랍니다.",
+            "🛴 전동 킥보드 이용 시 안전보호구 착용이 필요합니다.",
+        ].join("\n"),
+        finalNotice,
+    ];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(source, new Date("2026-05-12T00:00:00+09:00"), "gemma4:e2b");
+    const retryBody = JSON.parse(calls[1].request.body);
+
+    assert.equal(calls.length, 2);
+    assert.match(retryBody.userPrompt, /원문 정보 누락/);
+    assert.equal(result.split("\n").length, 2);
     assert.equal(result, finalNotice);
 });
 

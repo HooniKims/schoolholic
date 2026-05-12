@@ -417,6 +417,92 @@ test("sanitizeNoticeContent removes Korean final-writing preamble before emoji n
     );
 });
 
+test("sanitizeNoticeContent keeps all final emoji paragraphs after Korean planning text", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "안녕하세요. 요청하신 대로 공식적인 가정통신문 문체로 다듬겠습니다.",
+        "",
+        "원문 분석:",
+        "1. 친구의 외모나 특징을 비하하지 않도록 지도했습니다.",
+        "2. 전동 킥보드 안전 안내입니다.",
+        "",
+        "적용 규칙:",
+        "- 번호 목록 대신 플랫 이모지를 사용합니다.",
+        "- 최종 본문만 출력합니다.",
+        "",
+        "이 계획에 따라 최종 결과물을 작성하겠습니다.🤝 친구의 외모나 특징을 비하하지 않도록 지도하였습니다. 가정에서도 서로 간의 존중을 배울 수 있도록 함께 지도해 주시기 바랍니다.",
+        "",
+        "🛴 전동 킥보드와 전기 자전거 이용 시 면허와 안전보호구 착용이 필요합니다. 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "🤝 친구의 외모나 특징을 비하하지 않도록 지도하였습니다. 가정에서도 서로 간의 존중을 배울 수 있도록 함께 지도해 주시기 바랍니다.",
+            "",
+            "🛴 전동 킥보드와 전기 자전거 이용 시 면허와 안전보호구 착용이 필요합니다. 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+        ].join("\n")
+    );
+});
+
+test("sanitizeNoticeContent keeps all Korean paragraphs before bilingual separator", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "🤝 친구의 외모나 특징을 비하하지 않도록 지도하였습니다. 가정에서도 서로 간의 존중을 배울 수 있도록 함께 지도해 주시기 바랍니다.",
+        "",
+        "🛴 전동 킥보드와 전기 자전거 이용 시 면허와 안전보호구 착용이 필요합니다. 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+        "---",
+        "🤝 We guided students not to belittle friends' appearance or characteristics.",
+        "",
+        "🛴 A license and safety gear are required when using electric scooters or electric bicycles.",
+    ].join("\n");
+
+    assert.equal(sanitizeNoticeContent(raw), raw);
+});
+
+test("sanitizeNoticeContent removes echoed prompt restriction lines", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "응답에는 학부모에게 보낼 한국어 알림장 본문만 포함해 주세요.",
+        "본문 첫 줄 앞에 설명, 분석, 라벨을 붙이지 마세요.",
+        "첫 글자는 반드시 알림장 본문 이모지 또는 원문 첫 단어로 시작해야 합니다.",
+        "다른 언어 출력은 이후 별도 단계에서 처리하므로 여기서는 한국어 본문만 쓰세요.",
+        "",
+        "🤝 친구의 외모나 특징을 비하하지 않도록 지도하였습니다.",
+        "🛴 전동 킥보드 이용 시 안전보호구 착용이 필요합니다.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        "🤝 친구의 외모나 특징을 비하하지 않도록 지도하였습니다.\n🛴 전동 킥보드 이용 시 안전보호구 착용이 필요합니다."
+    );
+});
+
+test("sanitizeNoticeContent removes emoji-selection commentary from bilingual output", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "🛴'가 사용되었으므로, 첫 항목에는 다른 적절한 이모지를 사용하고, 전체적으로 일관성을 유지합니다.)",
+        "📚 친구의 외모나 특징에 대해 비하하는 언행이 없도록 지도하였으니, 가정에서도 서로 간의 존중을 배울 수 있도록 지도 부탁드립니다.",
+        "🛴 전동 킥보드와 전기 자전거 이용 시 면허와 안전보호구 착용이 필요합니다. 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+        "---",
+        "Translation must keep the same line count and preserve emojis.",
+        "Add flat emojis consistently before each line.",
+        "📚 We have guided students not to make comments that belittle a friend's appearance or characteristics. Please continue helping them learn mutual respect at home.",
+        "🛴 A license and safety protective gear are required when using electric kickboards or electric bicycles. Please provide active guidance at home.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        [
+            "📚 친구의 외모나 특징에 대해 비하하는 언행이 없도록 지도하였으니, 가정에서도 서로 간의 존중을 배울 수 있도록 지도 부탁드립니다.",
+            "🛴 전동 킥보드와 전기 자전거 이용 시 면허와 안전보호구 착용이 필요합니다. 가정에서도 적극적인 관심과 지도를 부탁드립니다.",
+            "---",
+            "📚 We have guided students not to make comments that belittle a friend's appearance or characteristics. Please continue helping them learn mutual respect at home.",
+            "🛴 A license and safety protective gear are required when using electric kickboards or electric bicycles. Please provide active guidance at home.",
+        ].join("\n")
+    );
+});
+
 test("NoticePlainText sanitizes saved notice content before rendering", async () => {
     const React = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");

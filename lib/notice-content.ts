@@ -28,8 +28,16 @@ const KOREAN_REVIEW_PREAMBLE_PATTERN =
     /(?:최종\s*검토|규칙\s*준수|정보\s*유지|형식\s*준수|이모지\s*사용|한국어\s*본문|영어\s*번(?:역|문)|구분하여\s*출력|본문\s*다듬기|번역\s*다듬기|출력)/;
 const KOREAN_FREEFORM_PREAMBLE_PATTERN =
     /(?:따라서|원문|형식|지침|다듬|변경|유지|존중|진행|요청|비어\s*있어|추가\s*정보|출력|결과|바탕|작성하겠습니다)/;
-const KOREAN_PLANNING_OUTPUT_PATTERN =
-    /(?:보조자입니다|원문\s*분석|다듬기\s*적용\s*계획|적용\s*계획|최종\s*결과물|관련\s*안내|숙제\/학습\s*안내)/;
+const PLANNING_OUTPUT_PATTERN =
+    /(?:보조자입니다|원문\s*분석|다듬기\s*적용\s*계획|적용\s*계획|최종\s*결과물|관련\s*안내|숙제\/학습\s*안내|thinking\s*process|analy[sz]e|original\s+text|formatting\s+rules|final\s+(?:output|review|formatting)|self-correction|drafting|refine\s+the|translation\s+must|tone:|output\s+format|apply\s+formatting|construct\s+final)/i;
+const PROMPT_RESTRICTION_LINE_PATTERN =
+    /^(?:응답에는|본문\s*첫\s*줄|첫\s*글자는|다른\s*언어\s*출력|한국어\s*줄\s*수와\s*순서|---\s*구분선은\s*쓰지|설명\s*,\s*분석\s*,\s*라벨\s*없이|아래\s*한국어\s*알림장\s*본문을\s*영어로\s*번역|원문\s*정보와\s*항목\s*순서는\s*유지|이미\s*문장형으로\s*입력된|번호\s*목록\s*대신|번호\s*목록은\s*그대로|새\s*정보나\s*작성\s*날짜|원문의\s*한국어를\s*물음표|학부모에게\s*보내는\s*공식적인\s*가정통신문|원문\s*문장을\s*그대로\s*반복|이전\s*출력(?:에는|이)|반드시\s*포함해야\s*하는\s*원문)/i;
+const ENGLISH_PROMPT_RESTRICTION_LINE_PATTERN =
+    /^(?:translation\s+must|the\s+translation\s+must|add\s+flat\s+emojis|preserve\s+emojis|keep\s+the\s+same\s+line\s+count|same\s+line\s+count)/i;
+const EMOJI_SELECTION_COMMENTARY_PATTERN =
+    /(?:이모지|emoji).*(?:사용|선택|항목|일관성|적절)|(?:사용되었으므로).*(?:항목|이모지|일관성)/i;
+const KOREAN_STANDALONE_PREAMBLE_PATTERN =
+    /(?:원문이\s*너무\s*비어|이\s*내용을\s*바탕으로\s*최종\s*알림장을\s*작성|한국어\s*본문과\s*영어\s*번문을\s*구분하여\s*출력|최종\s*알림장을\s*작성하겠습니다|결과물을\s*작성하겠습니다)/;
 
 function stripLinePrefix(line: string): string {
     return line
@@ -161,6 +169,198 @@ function trimEmptyEdges(lines: string[]): string[] {
     return lines.slice(start, end);
 }
 
+function collectNoticeSectionLines(sourceLines: string[], options: { requireKorean?: boolean; requireEmojiStart?: boolean } = {}): string[] {
+    const lines: string[] = [];
+    let started = false;
+
+    for (const sourceLine of sourceLines) {
+        const withoutResultPrefix = stripResultPrefix(sourceLine);
+        if (withoutResultPrefix === null) {
+            continue;
+        }
+
+        const line = stripInlineFinalPrefix(withoutResultPrefix);
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+            if (started) {
+                lines.push("");
+            }
+            continue;
+        }
+
+        if (isMetaLine(line)) {
+            continue;
+        }
+
+        if (!started) {
+            if (options.requireEmojiStart && !EMOJI_PATTERN.test(line)) {
+                continue;
+            }
+            if (options.requireKorean && !/[가-힣]/.test(line)) {
+                continue;
+            }
+            started = true;
+        }
+
+        lines.push(line);
+    }
+
+    return trimEmptyEdges(lines);
+}
+
+function isEmojiNoticeLine(line: string): boolean {
+    return EMOJI_PATTERN.test(line.trimStart().slice(0, 4));
+}
+
+function normalizeNoticeLineKey(line: string): string {
+    return line
+        .replace(EMOJI_PATTERN, "")
+        .replace(/^\s*(?:\(?\d+\s*(?:번)?\)?[.)]?|[-*])\s*/i, "")
+        .replace(/[ \t]+/g, " ")
+        .trim()
+        .toLowerCase();
+}
+
+function dedupeNoticeLines(lines: string[]): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+
+    for (const line of lines) {
+        if (!line.trim()) {
+            if (result.length && result[result.length - 1].trim()) {
+                result.push("");
+            }
+            continue;
+        }
+
+        const key = normalizeNoticeLineKey(line);
+        if (key && seen.has(key)) {
+            continue;
+        }
+
+        if (key) {
+            seen.add(key);
+        }
+        result.push(line);
+    }
+
+    return trimEmptyEdges(result);
+}
+
+function countContentLines(lines: string[]): number {
+    return lines.filter((line) => line.trim()).length;
+}
+
+function selectNoticeSectionLines(preferredEmojiLines: string[], fallbackLines: string[]): string[] {
+    const emojiCount = countContentLines(preferredEmojiLines);
+    const fallbackCount = countContentLines(fallbackLines);
+
+    if (!emojiCount) {
+        return fallbackLines;
+    }
+
+    if (emojiCount >= fallbackCount || fallbackCount > emojiCount * 2) {
+        return preferredEmojiLines;
+    }
+
+    return fallbackLines;
+}
+
+function extractTrailingEmojiNoticeBlocks(sourceLines: string[]): string[] {
+    const blocks: string[][] = [];
+    let currentBlock: string[] = [];
+
+    const pushCurrentBlock = () => {
+        const block = trimEmptyEdges(currentBlock);
+        if (block.length) {
+            blocks.push(block);
+        }
+        currentBlock = [];
+    };
+
+    for (const sourceLine of sourceLines) {
+        const withoutResultPrefix = stripResultPrefix(sourceLine);
+        if (withoutResultPrefix === null) {
+            continue;
+        }
+
+        const line = stripInlineFinalPrefix(withoutResultPrefix);
+        if (!line.trim()) {
+            pushCurrentBlock();
+            continue;
+        }
+
+        if (isMetaLine(line)) {
+            pushCurrentBlock();
+            continue;
+        }
+
+        currentBlock.push(line);
+    }
+
+    pushCurrentBlock();
+
+    const selectedBlocks: string[][] = [];
+    for (let index = blocks.length - 1; index >= 0; index -= 1) {
+        const block = blocks[index];
+        const contentLines = block.filter((line) => line.trim());
+        const isCleanEmojiBlock = contentLines.length > 0 && contentLines.every(isEmojiNoticeLine);
+
+        if (!isCleanEmojiBlock) {
+            if (selectedBlocks.length) {
+                break;
+            }
+            continue;
+        }
+
+        selectedBlocks.unshift(block);
+    }
+
+    return dedupeNoticeLines(selectedBlocks.flatMap((block, index) => (
+        index === 0 ? block : ["", ...block]
+    )));
+}
+
+function extractCleanTrailingEmojiNoticeOutput(cleaned: string): string[] | null {
+    const sourceLines = cleaned
+        .split("\n")
+        .map((line) => stripResultPrefix(line))
+        .filter((line): line is string => line !== null);
+    const lines = extractTrailingEmojiNoticeBlocks(sourceLines);
+
+    return lines.length ? lines : null;
+}
+
+function extractTrailingNoticeLines(sourceLines: string[]): string[] {
+    const finalLines: string[] = [];
+
+    for (let i = sourceLines.length - 1; i >= 0; i -= 1) {
+        const line = stripInlineFinalPrefix(sourceLines[i]);
+        if (!line.trim()) {
+            if (finalLines.length) {
+                break;
+            }
+            continue;
+        }
+
+        if (isMetaLine(line)) {
+            if (finalLines.length) {
+                break;
+            }
+            continue;
+        }
+
+        if (!finalLines.length && !/[가-힣A-Za-z0-9]/.test(line)) {
+            continue;
+        }
+
+        finalLines.unshift(line);
+    }
+
+    return trimEmptyEdges(finalLines);
+}
+
 function stripInlineFinalPrefix(line: string): string {
     const withoutResultPrefix = stripResultPrefix(line) ?? "";
     const stripped = stripLinePrefix(withoutResultPrefix)
@@ -181,43 +381,21 @@ function stripInlineFinalPrefix(line: string): string {
 }
 
 function extractFinalEmojiNoticeOutput(cleaned: string): string[] | null {
-    if (!KOREAN_PLANNING_OUTPUT_PATTERN.test(cleaned)) {
+    if (!PLANNING_OUTPUT_PATTERN.test(cleaned)) {
         return null;
     }
 
-    const finalLines: string[] = [];
     const sourceLines = cleaned
         .split("\n")
         .map((line) => stripResultPrefix(line))
         .filter((line): line is string => line !== null);
-
-    for (let i = sourceLines.length - 1; i >= 0; i -= 1) {
-        const line = stripInlineFinalPrefix(sourceLines[i]);
-        if (!line.trim()) {
-            if (finalLines.length) {
-                break;
-            }
-            continue;
-        }
-
-        if (isMetaLine(line)) {
-            if (finalLines.length) {
-                break;
-            }
-            continue;
-        }
-
-        if (EMOJI_PATTERN.test(line) && /[가-힣A-Za-z0-9]/.test(line)) {
-            finalLines.unshift(line);
-            continue;
-        }
-
-        if (finalLines.length) {
-            break;
-        }
+    const finalLines = collectNoticeSectionLines(sourceLines, { requireEmojiStart: true });
+    if (finalLines.length) {
+        return finalLines;
     }
 
-    return finalLines.length ? finalLines : null;
+    const trailingLines = extractTrailingNoticeLines(sourceLines);
+    return trailingLines.length ? trailingLines : null;
 }
 
 function extractBilingualFinalOutput(cleaned: string): string[] | null {
@@ -234,38 +412,24 @@ function extractBilingualFinalOutput(cleaned: string): string[] | null {
         return null;
     }
 
-    const koreanLines: string[] = [];
-    for (let i = separatorIndex - 1; i >= 0; i -= 1) {
-        if (SEPARATOR_PATTERN.test(sourceLines[i])) {
-            break;
-        }
+    const previousSeparatorIndex = sourceLines
+        .slice(0, separatorIndex)
+        .reduce((lastIndex, line, index) => (SEPARATOR_PATTERN.test(line) ? index : lastIndex), -1);
+    const koreanSourceLines = sourceLines.slice(previousSeparatorIndex + 1, separatorIndex);
+    const koreanSegment = koreanSourceLines.join("\n");
+    const fallbackKoreanLines =
+        extractFinalEmojiNoticeOutput(koreanSegment) ??
+        collectNoticeSectionLines(koreanSourceLines, { requireKorean: true });
+    const koreanLines = selectNoticeSectionLines(
+        extractTrailingEmojiNoticeBlocks(koreanSourceLines),
+        fallbackKoreanLines
+    );
 
-        const line = stripInlineFinalPrefix(sourceLines[i]);
-        if (!line.trim()) {
-            if (koreanLines.length) {
-                break;
-            }
-            continue;
-        }
-
-        if (isMetaLine(line)) {
-            if (koreanLines.length) {
-                break;
-            }
-            continue;
-        }
-
-        if (!koreanLines.length && !/[가-힣]/.test(line)) {
-            continue;
-        }
-
-        koreanLines.unshift(line);
-    }
-
-    const englishLines = sourceLines
-        .slice(separatorIndex + 1)
-        .map((line) => stripInlineFinalPrefix(line))
-        .filter((line) => !isMetaLine(line));
+    const englishSourceLines = sourceLines.slice(separatorIndex + 1);
+    const englishLines = selectNoticeSectionLines(
+        extractTrailingEmojiNoticeBlocks(englishSourceLines),
+        collectNoticeSectionLines(englishSourceLines)
+    );
 
     const trimmedKorean = trimEmptyEdges(koreanLines);
     const trimmedEnglish = trimEmptyEdges(englishLines);
@@ -339,6 +503,22 @@ function isMetaLine(line: string): boolean {
         return true;
     }
 
+    if (PROMPT_RESTRICTION_LINE_PATTERN.test(stripped)) {
+        return true;
+    }
+
+    if (ENGLISH_PROMPT_RESTRICTION_LINE_PATTERN.test(stripped)) {
+        return true;
+    }
+
+    if (EMOJI_SELECTION_COMMENTARY_PATTERN.test(stripped)) {
+        return true;
+    }
+
+    if (stripped.length <= 140 && KOREAN_STANDALONE_PREAMBLE_PATTERN.test(stripped)) {
+        return true;
+    }
+
     return stripped.length <= 80 && META_PHRASE_PATTERN.test(stripped);
 }
 
@@ -359,6 +539,7 @@ export function sanitizeNoticeContent(content?: string | null): string {
 
     let cleaned = content.replace(/\r\n/g, "\n");
 
+    cleaned = cleaned.replace(/([.!?])(?=[\u{1F300}-\u{1FAFF}])/gu, "$1\n");
     cleaned = cleaned.replace(/\s*\([^)]*(글자|문체|검토|수정|다듬기)[^)]*\)\s*/gi, " ");
     cleaned = cleaned.replace(/\s*\[(분석|검토|검증)[^\]]*\]\s*/gi, " ");
     cleaned = cleaned.replace(/^\s*#{1,6}\s+/gm, "");
@@ -366,7 +547,11 @@ export function sanitizeNoticeContent(content?: string | null): string {
     cleaned = cleaned.replace(/__(.*?)__/g, "$1");
     cleaned = cleaned.replace(/`([^`]+)`/g, "$1");
 
-    const lines = extractBilingualFinalOutput(cleaned) ?? extractFinalEmojiNoticeOutput(cleaned) ?? buildSanitizedLines(cleaned);
+    const lines =
+        extractBilingualFinalOutput(cleaned) ??
+        extractFinalEmojiNoticeOutput(cleaned) ??
+        extractCleanTrailingEmojiNoticeOutput(cleaned) ??
+        buildSanitizedLines(cleaned);
 
     return lines
         .join("\n")

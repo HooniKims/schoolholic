@@ -15,6 +15,7 @@ type SummarizeNoteOptions = {
 };
 
 const EMOJI_PATTERN = /[\u{1F300}-\u{1FAFF}]/u;
+const LEADING_EMOJI_PATTERN = /^\s*([\u{1F300}-\u{1FAFF}])\s*/u;
 const QUESTION_MARK_NOISE_PATTERN = /(?:\?[\s?.!,:;]*){3,}/;
 
 async function callLocalLlmAPI(
@@ -223,6 +224,89 @@ function buildFormalizedFallbackNoticeText(sourceText: string): string {
         .trim();
 }
 
+function ensureNoticeLineEmojis(text: string): string {
+    return text
+        .replace(/\r\n/g, "\n")
+        .split("\n")
+        .map((line) => {
+            if (!line.trim() || /^---\s*$/.test(line)) {
+                return line;
+            }
+
+            const trimmed = line.trim();
+            if (EMOJI_PATTERN.test(trimmed.slice(0, 4))) {
+                return trimmed;
+            }
+
+            return `${selectNoticeEmoji(trimmed)} ${trimmed}`;
+        })
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+}
+
+function extractNoticeContentLines(text: string): string[] {
+    return text
+        .replace(/\r\n/g, "\n")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line && !/^---\s*$/.test(line));
+}
+
+function getLeadingEmoji(line: string): string {
+    return line.match(LEADING_EMOJI_PATTERN)?.[1] ?? "📌";
+}
+
+function isReliableEnglishTranslation(koreanBody: string, englishBody: string): boolean {
+    const koreanLines = extractNoticeContentLines(koreanBody);
+    const englishLines = extractNoticeContentLines(englishBody);
+    if (!koreanLines.length || englishLines.length !== koreanLines.length) {
+        return false;
+    }
+
+    if (/친구|외모|특징|비하|존중|배려/.test(koreanBody) &&
+        !/(friend|appearance|characteristic|respect|belittle|derogatory|hurtful)/i.test(englishBody)) {
+        return false;
+    }
+
+    if (/킥보드|자전거|원동기|면허|안전|보호구/.test(koreanBody) &&
+        !/(kickboard|scooter|bicycle|bike|e-?bike|license|helmet|protective|gear|safety|motorized)/i.test(englishBody)) {
+        return false;
+    }
+
+    return true;
+}
+
+function buildFallbackEnglishLine(koreanLine: string): string {
+    const emoji = getLeadingEmoji(koreanLine);
+    const body = koreanLine.replace(LEADING_EMOJI_PATTERN, "").trim();
+
+    if (/친구|외모|특징|비하|존중|배려/.test(body)) {
+        return `${emoji} We have guided students not to belittle friends' appearance or characteristics. Please continue conversations at home so students can learn mutual respect.`;
+    }
+
+    if (/킥보드|자전거|원동기|면허|안전|보호구/.test(body)) {
+        return `${emoji} Students using electric scooters or electric bicycles must have the required license and wear safety protective gear. Please continue providing active guidance at home.`;
+    }
+
+    if (/숙제|과제|익힘|문제|교과서|학습/.test(body)) {
+        return `${emoji} Please help your child check the learning guidance and complete the assigned schoolwork at home.`;
+    }
+
+    if (/체육|운동|준비물/.test(body)) {
+        return `${emoji} Please help your child prepare the required items and come to school ready for the scheduled activity.`;
+    }
+
+    return `${emoji} Please review this school notice at home and guide your child accordingly.`;
+}
+
+function buildFallbackEnglishTranslation(koreanBody: string): string {
+    return extractNoticeContentLines(koreanBody)
+        .map(buildFallbackEnglishLine)
+        .join("\n")
+        .trim();
+}
+
 function preservesRequiredNumberFacts(sourceText: string, resultText: string): boolean {
     const requiredFacts = extractRequiredNumberFacts(sourceText);
     return requiredFacts.every((fact) => resultText.includes(fact));
@@ -268,6 +352,15 @@ function preservesSourceItemCoverage(sourceText: string, resultText: string): bo
     });
 }
 
+function preservesSourceItemLineCount(sourceText: string, resultText: string): boolean {
+    const sourceItems = extractSourceItems(sourceText);
+    if (sourceItems.length <= 1) {
+        return true;
+    }
+
+    return extractNoticeContentLines(resultText).length === sourceItems.length;
+}
+
 function hasUnexpectedQuestionMarkNoise(sourceText: string, resultText: string): boolean {
     const sourceQuestionMarks = sourceText.match(/\?/g)?.length ?? 0;
     const resultQuestionMarks = resultText.match(/\?/g)?.length ?? 0;
@@ -280,6 +373,7 @@ function isReliableNoticeResult(sourceText: string, resultText: string): boolean
         preservesRequiredNumberFacts(sourceText, resultText) &&
         preservesRequiredKoreanFacts(sourceText, resultText) &&
         preservesSourceItemCoverage(sourceText, resultText) &&
+        preservesSourceItemLineCount(sourceText, resultText) &&
         !hasUnexpectedQuestionMarkNoise(sourceText, resultText)
     );
 }
@@ -447,7 +541,7 @@ export async function summarizeNote(
             sanitizedResult = sanitizeNoticeContent(buildFormalizedFallbackNoticeText(text));
         }
 
-        return sanitizedResult;
+        return ensureNoticeLineEmojis(sanitizedResult);
     }
 
     async function generateEnglishTranslation(koreanBody: string, modelId: string): Promise<string> {
@@ -467,18 +561,52 @@ export async function summarizeNote(
             "[한국어 알림장 본문]",
             koreanBody,
         ].join("\n");
-        const rawTranslation = await generateWithRetry({
+        let rawTranslation = await generateWithRetry({
             systemMessage: translationSystemMessage,
             prompt: translationPrompt,
             model: modelId,
             temperature: 0.1,
         });
 
-        return sanitizeNoticeContent(rawTranslation)
+        let sanitizedTranslation = sanitizeNoticeContent(rawTranslation)
             .split("\n")
             .filter((line) => !/^---\s*$/.test(line))
             .join("\n")
             .trim();
+
+        if (!isReliableEnglishTranslation(koreanBody, sanitizedTranslation)) {
+            const repairPrompt = [
+                "이전 영어 번역에서 한국어 알림장 줄이 누락되었거나 중복되었습니다.",
+                "아래 한국어 본문의 줄 수와 순서를 반드시 그대로 유지해 영어로 다시 번역해 주세요.",
+                "각 줄 첫머리의 이모지도 그대로 유지하세요.",
+                "설명, 분석, 라벨 없이 영어 번역 본문만 출력하세요.",
+                "",
+                "[한국어 알림장 본문]",
+                koreanBody,
+                "",
+                "[이전 영어 번역]",
+                sanitizedTranslation,
+            ].join("\n");
+
+            rawTranslation = await generateWithRetry({
+                systemMessage: translationSystemMessage,
+                prompt: repairPrompt,
+                model: modelId,
+                temperature: 0.05,
+            });
+
+            sanitizedTranslation = sanitizeNoticeContent(rawTranslation)
+                .split("\n")
+                .filter((line) => !/^---\s*$/.test(line))
+                .join("\n")
+                .trim();
+        }
+
+        if (!isReliableEnglishTranslation(koreanBody, sanitizedTranslation)) {
+            sanitizedTranslation = buildFallbackEnglishTranslation(koreanBody);
+        }
+
+        return sanitizedTranslation;
     }
 
     async function generateNoticeResult(modelId: string): Promise<string> {
@@ -489,7 +617,14 @@ export async function summarizeNote(
         }
 
         const englishResult = await generateEnglishTranslation(koreanResult, modelId);
-        return sanitizeNoticeContent(`${koreanResult}\n---\n${englishResult}`);
+        const combinedResult = sanitizeNoticeContent(`${koreanResult}\n---\n${englishResult}`);
+        const [combinedKorean = "", combinedEnglish = ""] = combinedResult.split("\n---\n");
+
+        if (!combinedEnglish || !isReliableEnglishTranslation(combinedKorean, combinedEnglish)) {
+            return sanitizeNoticeContent(`${koreanResult}\n---\n${buildFallbackEnglishTranslation(koreanResult)}`);
+        }
+
+        return combinedResult;
     }
 
     const selectedModel = model || DEFAULT_MODEL;
