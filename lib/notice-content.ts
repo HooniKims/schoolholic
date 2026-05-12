@@ -27,7 +27,9 @@ const KOREAN_INLINE_META_PREFIX_PATTERN = /^(?:생성|한국어\s*본문\s*다�
 const KOREAN_REVIEW_PREAMBLE_PATTERN =
     /(?:최종\s*검토|규칙\s*준수|정보\s*유지|형식\s*준수|이모지\s*사용|한국어\s*본문|영어\s*번(?:역|문)|구분하여\s*출력|본문\s*다듬기|번역\s*다듬기|출력)/;
 const KOREAN_FREEFORM_PREAMBLE_PATTERN =
-    /(?:따라서|원문|형식|지침|다듬|변경|유지|존중|진행|요청|비어\s*있어|추가\s*정보|출력|결과)/;
+    /(?:따라서|원문|형식|지침|다듬|변경|유지|존중|진행|요청|비어\s*있어|추가\s*정보|출력|결과|바탕|작성하겠습니다)/;
+const KOREAN_PLANNING_OUTPUT_PATTERN =
+    /(?:보조자입니다|원문\s*분석|다듬기\s*적용\s*계획|적용\s*계획|최종\s*결과물|관련\s*안내|숙제\/학습\s*안내)/;
 
 function stripLinePrefix(line: string): string {
     return line
@@ -118,6 +120,22 @@ function stripFreeformPreambleBeforeEmojiBody(line: string): string {
     return line;
 }
 
+function stripPlanningPrefixBeforeEmojiBody(line: string): string {
+    const emojiMatch = line.match(EMOJI_PATTERN);
+    if (emojiMatch?.index === undefined || emojiMatch.index <= 0) {
+        return line;
+    }
+
+    const prefix = line.slice(0, emojiMatch.index);
+    const suffix = line.slice(emojiMatch.index);
+
+    if (/(?:->|→)/.test(prefix) && /[가-힣A-Za-z0-9]/.test(suffix)) {
+        return suffix.trimStart();
+    }
+
+    return line;
+}
+
 function stripKoreanInlineMetaPrefix(line: string): string {
     let stripped = line;
 
@@ -154,10 +172,52 @@ function stripInlineFinalPrefix(line: string): string {
     return stripLeadingEnglishPreambleBeforeKorean(
         stripFreeformPreambleBeforeEmojiBody(
             stripReviewPreambleBeforeEmojiBody(
-                normalizeLeadingDecorations(stripKoreanInlineMetaPrefix(withoutFinalPrefix)).trim()
+                stripPlanningPrefixBeforeEmojiBody(
+                    normalizeLeadingDecorations(stripKoreanInlineMetaPrefix(withoutFinalPrefix)).trim()
+                )
             )
         )
     );
+}
+
+function extractFinalEmojiNoticeOutput(cleaned: string): string[] | null {
+    if (!KOREAN_PLANNING_OUTPUT_PATTERN.test(cleaned)) {
+        return null;
+    }
+
+    const finalLines: string[] = [];
+    const sourceLines = cleaned
+        .split("\n")
+        .map((line) => stripResultPrefix(line))
+        .filter((line): line is string => line !== null);
+
+    for (let i = sourceLines.length - 1; i >= 0; i -= 1) {
+        const line = stripInlineFinalPrefix(sourceLines[i]);
+        if (!line.trim()) {
+            if (finalLines.length) {
+                break;
+            }
+            continue;
+        }
+
+        if (isMetaLine(line)) {
+            if (finalLines.length) {
+                break;
+            }
+            continue;
+        }
+
+        if (EMOJI_PATTERN.test(line) && /[가-힣A-Za-z0-9]/.test(line)) {
+            finalLines.unshift(line);
+            continue;
+        }
+
+        if (finalLines.length) {
+            break;
+        }
+    }
+
+    return finalLines.length ? finalLines : null;
 }
 
 function extractBilingualFinalOutput(cleaned: string): string[] | null {
@@ -306,7 +366,7 @@ export function sanitizeNoticeContent(content?: string | null): string {
     cleaned = cleaned.replace(/__(.*?)__/g, "$1");
     cleaned = cleaned.replace(/`([^`]+)`/g, "$1");
 
-    const lines = extractBilingualFinalOutput(cleaned) ?? buildSanitizedLines(cleaned);
+    const lines = extractBilingualFinalOutput(cleaned) ?? extractFinalEmojiNoticeOutput(cleaned) ?? buildSanitizedLines(cleaned);
 
     return lines
         .join("\n")

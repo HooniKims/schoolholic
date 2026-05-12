@@ -180,6 +180,42 @@ test("summarizeNote retries when the model drops source date or time facts", asy
     );
 });
 
+test("summarizeNote keeps a valid polish result even when Korean wording changes naturally", async () => {
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: [
+                                    "📌 내일은 체육복을 입고 등교합니다.",
+                                    "📚 수학 익힘책 32쪽을 풀어 옵니다.",
+                                ].join("\n"),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "내일 체육복. 수학 익힘책 32쪽 풀기.",
+        new Date("2026-04-29T00:00:00+09:00"),
+        "gemma4:e2b"
+    );
+
+    assert.equal(calls.length, 1);
+    assert.equal(
+        result,
+        "📌 내일은 체육복을 입고 등교합니다.\n📚 수학 익힘책 32쪽을 풀어 옵니다."
+    );
+});
+
 test("summarizeNote falls back to source text when all model attempts are corrupted", async () => {
     const responses = [
         "원문이 너무 비어있어 다듬을 내용이 없으므로, 형식만 유지하겠습니다.😊 ?? 5? 3? ??? 2?? ???? 10? ??? ???. ??? ????.",

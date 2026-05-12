@@ -134,7 +134,12 @@ function preservesRequiredKoreanFacts(sourceText: string, resultText: string): b
         return true;
     }
 
-    return requiredFacts.every((fact) => resultText.includes(fact));
+    const preservedCount = requiredFacts.filter((fact) => resultText.includes(fact)).length;
+    if (requiredFacts.length <= 2) {
+        return preservedCount >= 1;
+    }
+
+    return preservedCount / requiredFacts.length >= 0.6;
 }
 
 function hasUnexpectedQuestionMarkNoise(sourceText: string, resultText: string): boolean {

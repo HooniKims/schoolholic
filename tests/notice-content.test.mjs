@@ -366,6 +366,57 @@ test("sanitizeNoticeContent removes standalone Korean polish labels before bilin
     );
 });
 
+test("sanitizeNoticeContent keeps the first notice line in multi-line Korean output", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "📌 내일은 체육복을 입고 등교합니다.",
+        "📚 수학 익힘책 32쪽을 풀어 옵니다.",
+    ].join("\n");
+
+    assert.equal(sanitizeNoticeContent(raw), raw);
+});
+
+test("sanitizeNoticeContent extracts the final notice after Korean analysis and plan text", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "안녕하세요. 저는 초등학교 알림장 문장을 다듬는 보조자입니다.",
+        "규칙을 준수하여 최종 알림장 본문만 출력하겠습니다.",
+        "",
+        "원문 분석:",
+        "내일 체육복. 수학 익힘책 32쪽 풀기. 가정통신문 확인.",
+        "",
+        "다듬기 적용 계획:",
+        "1. 원문의 순서와 정보 유지.",
+        "2. 어색한 부분을 자연스럽게 수정.",
+        "3. 각 항목 앞에 적절한 플랫 이모지를 추가.",
+        "",
+        "* 내일 체육복 -> (체육복 관련 안내)",
+        "* 수학 익힘책 32쪽 풀기 -> (숙제/학습 안내)",
+        "* 가정통신문 확인 -> (안내 사항)👕 내일 체육복.",
+        "📚 수학 익힘책 32쪽 풀기.",
+        "📝 가정통신문 확인.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        "👕 내일 체육복.\n📚 수학 익힘책 32쪽 풀기.\n📝 가정통신문 확인."
+    );
+});
+
+test("sanitizeNoticeContent removes Korean final-writing preamble before emoji notice body", () => {
+    const { sanitizeNoticeContent } = loadTsModule("lib/notice-content.ts");
+    const raw = [
+        "이 내용을 바탕으로 최종 알림장을 작성하겠습니다.👕 내일 체육복 준비.",
+        "📚 수학 익힘책 32쪽 풀기.",
+        "📝 가정통신문 확인.",
+    ].join("\n");
+
+    assert.equal(
+        sanitizeNoticeContent(raw),
+        "👕 내일 체육복 준비.\n📚 수학 익힘책 32쪽 풀기.\n📝 가정통신문 확인."
+    );
+});
+
 test("NoticePlainText sanitizes saved notice content before rendering", async () => {
     const React = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");
