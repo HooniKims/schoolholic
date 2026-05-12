@@ -13,7 +13,6 @@ import { useAuth } from '@/components/AuthContext';
 import { NoticePlainText } from '@/components/NoticePlainText';
 import TouchScrollableTextarea from '@/components/TouchScrollableTextarea';
 import { useLanguage } from '@/lib/i18n';
-import { sanitizeNoticeContent } from '@/lib/notice-content';
 
 export default function NoticeTeacherPage() {
     const { user, loading: authLoading } = useAuth();
@@ -57,7 +56,7 @@ export default function NoticeTeacherPage() {
                 const data = await getNoteByDate(dateStr, user.uid);
                 if (data) {
                     setNote(data.originalContent || '');
-                    setSummary(sanitizeNoticeContent(data.summary));
+                    setSummary(data.summary || '');
                 }
             } catch (err) {
                 console.error(err);
@@ -105,9 +104,7 @@ export default function NoticeTeacherPage() {
         setIsSaving(true);
         try {
             const dateStr = format(date, 'yyyy-MM-dd');
-            const sanitizedSummary = sanitizeNoticeContent(summary);
-            await saveNote(dateStr, note, sanitizedSummary, user.uid);
-            setSummary(sanitizedSummary);
+            await saveNote(dateStr, note, summary, user.uid);
             setStatusMsg(t('savedSuccessfully'));
             setTimeout(() => setStatusMsg(''), 3000);
         } catch (err) {
@@ -147,7 +144,7 @@ export default function NoticeTeacherPage() {
                 .filter((n) => n.date)
                 .map((n) => ({
                     ...n,
-                    summary: sanitizeNoticeContent(n.summary),
+                    summary: n.summary || '',
                 }));
             setNoteList(validNotes);
             setSelectedNotes(new Set());
@@ -197,7 +194,7 @@ export default function NoticeTeacherPage() {
                 .filter((n) => n.date)
                 .map((n) => ({
                     ...n,
-                    summary: sanitizeNoticeContent(n.summary),
+                    summary: n.summary || '',
                 }));
             setNoteList(validNotes);
             setSelectedNotes(new Set());

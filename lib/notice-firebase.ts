@@ -1,6 +1,5 @@
 import { db } from './firebase';
 import { doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { sanitizeNoticeContent } from './notice-content';
 
 const NOTES_COLLECTION = 'notes';
 
@@ -23,7 +22,7 @@ function noteDocId(dateStr: string, teacherUid?: string): string {
 function normalizeNoteData(data: NoticeData): NoticeData {
     return {
         ...data,
-        summary: sanitizeNoticeContent(data.summary),
+        summary: data.summary ?? '',
     };
 }
 
@@ -35,7 +34,7 @@ export const saveNote = async (dateStr: string, originalContent: string, summary
         await setDoc(noteRef, {
             date: dateStr,
             originalContent,
-            summary: sanitizeNoticeContent(summary),
+            summary,
             teacherUid: teacherUid || null,
             updatedAt: new Date().toISOString()
         }, { merge: true });

@@ -129,13 +129,61 @@ test("summarizeNote adds English translation instructions when requested", async
     assert.match(requestBody.systemMessage, /원문의 숫자, 날짜, 시간, 요일/);
     assert.match(requestBody.systemMessage, /설명, 분석, 라벨/);
     assert.match(requestBody.systemMessage, /플랫 이모지를 붙입니다/);
+    assert.match(requestBody.systemMessage, /공식적인 가정통신문 문체/);
+    assert.match(requestBody.systemMessage, /짧은 메모를 그대로 베껴 쓰지 말고/);
     assert.match(requestBody.userPrompt, /플랫 이모지를 붙여 주세요/);
+    assert.match(requestBody.userPrompt, /학부모에게 전달할 공식 통신문 문체/);
     assert.doesNotMatch(requestBody.systemMessage, /붙여도 됩니다/);
     assert.doesNotMatch(requestBody.userPrompt, /작성 날짜 참고/);
     assert.equal(requestBody.temperature, 0.2);
     assert.equal(
         result,
         "내일은 체육복을 입고 등교합니다.\n---\nStudents should wear PE uniforms to school tomorrow."
+    );
+});
+
+test("summarizeNote retries when the model merely copies source fragments", async () => {
+    const responses = [
+        [
+            "📌 내일 체육복.",
+            "📚 수학 익힘책 32쪽 풀기.",
+        ].join("\n"),
+        [
+            "👕 내일은 체육복을 준비하여 등교할 수 있도록 가정에서 확인해 주시기 바랍니다.",
+            "📚 수학 익힘책 32쪽을 풀어올 수 있도록 지도해 주시기 바랍니다.",
+        ].join("\n"),
+    ];
+    const calls = [];
+    const { summarizeNote } = loadTsModule("lib/notice-ai.ts", {
+        fetch: async (url, request) => {
+            calls.push({ url, request });
+            return {
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        {
+                            message: {
+                                content: responses.shift(),
+                            },
+                        },
+                    ],
+                }),
+            };
+        },
+    });
+
+    const result = await summarizeNote(
+        "내일 체육복. 수학 익힘책 32쪽 풀기.",
+        new Date("2026-04-29T00:00:00+09:00"),
+        "gemma4:e2b"
+    );
+    const retryBody = JSON.parse(calls[1].request.body);
+
+    assert.equal(calls.length, 2);
+    assert.match(retryBody.userPrompt, /원문을 거의 그대로 옮긴 표현/);
+    assert.equal(
+        result,
+        "👕 내일은 체육복을 준비하여 등교할 수 있도록 가정에서 확인해 주시기 바랍니다.\n📚 수학 익힘책 32쪽을 풀어올 수 있도록 지도해 주시기 바랍니다."
     );
 });
 
@@ -172,7 +220,7 @@ test("summarizeNote retries when the model drops source date or time facts", asy
     const retryBody = JSON.parse(calls[1].request.body);
 
     assert.equal(calls.length, 2);
-    assert.match(retryBody.userPrompt, /원문 정보 누락, 메타 설명, 또는 깨진 문자/);
+    assert.match(retryBody.userPrompt, /원문 정보 누락, 메타 설명, 깨진 문자/);
     assert.match(retryBody.userPrompt, /4, 30, 12/);
     assert.equal(
         result,
@@ -284,7 +332,7 @@ test("summarizeNote retries with the default model when the selected model is un
                     choices: [
                         {
                             message: {
-                                content: "📌 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다.",
+                                content: "📌 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 볼 예정입니다. 가정에서 연습할 수 있도록 확인해 주시기 바랍니다.",
                             },
                         },
                     ],
@@ -302,5 +350,5 @@ test("summarizeNote retries with the default model when the selected model is un
     assert.equal(calls.length, 2);
     assert.equal(JSON.parse(calls[0].request.body).model, "google/gemma-4-e4b");
     assert.equal(JSON.parse(calls[1].request.body).model, "google/gemma-4-e2b");
-    assert.equal(result, "📌 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 봅니다.");
+    assert.equal(result, "📌 내일 5월 3일 금요일 2시에 받아쓰기 10급 시험을 볼 예정입니다. 가정에서 연습할 수 있도록 확인해 주시기 바랍니다.");
 });

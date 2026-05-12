@@ -123,6 +123,32 @@ function extractRequiredKoreanFacts(text: string): string[] {
     return Array.from(new Set(text.match(/[가-힣]{2,}/g) ?? []));
 }
 
+function normalizeForCopyCheck(text: string): string {
+    return text
+        .replace(EMOJI_PATTERN, "")
+        .replace(/^[\s\-*>\d.)]+/gm, "")
+        .replace(/[ \t]+/g, " ")
+        .trim();
+}
+
+function extractSourceFragments(text: string): string[] {
+    return text
+        .replace(/\r\n/g, "\n")
+        .split(/[\n.!?。！？]+/)
+        .map((fragment) => normalizeForCopyCheck(fragment))
+        .filter((fragment) => fragment.length >= 4);
+}
+
+function isTooCloseToSource(sourceText: string, resultText: string): boolean {
+    const fragments = extractSourceFragments(sourceText);
+    if (!fragments.length) {
+        return false;
+    }
+
+    const normalizedResult = normalizeForCopyCheck(resultText);
+    return fragments.every((fragment) => normalizedResult.includes(fragment));
+}
+
 function preservesRequiredNumberFacts(sourceText: string, resultText: string): boolean {
     const requiredFacts = extractRequiredNumberFacts(sourceText);
     return requiredFacts.every((fact) => resultText.includes(fact));
@@ -229,8 +255,9 @@ export async function summarizeNote(
         "규칙:",
         "- 사용자가 쓴 정보, 순서, 줄바꿈, 들여쓰기를 최대한 유지합니다.",
         "- 원문의 숫자, 날짜, 시간, 요일은 반드시 유지합니다.",
-        "- 어색한 문장만 자연스럽게 고칩니다.",
-        "- 문체를 차분하고 통일된 한국어로 맞춥니다.",
+        "- 짧은 메모를 그대로 베껴 쓰지 말고, 학부모에게 안내하는 완성된 문장으로 바꿉니다.",
+        "- 문체를 차분하고 공식적인 가정통신문 문체로 맞춥니다.",
+        "- 명사형 메모나 단편 문장은 자연스러운 안내 문장으로 풀어 씁니다.",
         "- 새 정보, 새 일정, 새 금액, 새 제출물은 절대 추가하지 않습니다.",
         "- 제목, 소제목, 마크다운 표기, 번호 목록을 새로 만들지 않습니다.",
         "- 각 문단이나 항목 첫머리에 과하지 않은 플랫 이모지를 붙입니다.",
@@ -238,8 +265,8 @@ export async function summarizeNote(
     ].join("\n");
 
     const prompt = [
-        "아래 원문을 일반 텍스트로 조금만 다듬어 주세요.",
-        "원문 구조와 정보는 유지하고, 문장만 자연스럽게 고쳐 주세요.",
+        "아래 원문을 학부모에게 전달할 공식 통신문 문체의 일반 텍스트로 다듬어 주세요.",
+        "원문 정보는 유지하되, 짧거나 어색한 메모는 완성된 안내 문장으로 바꿔 주세요.",
         "각 문단이나 항목 첫머리에 간단한 플랫 이모지를 붙여 주세요.",
         ...buildOutputFormatInstruction(options.includeEnglishTranslation),
         "",
@@ -257,14 +284,15 @@ export async function summarizeNote(
 
         let sanitizedResult = sanitizeNoticeContent(rawResult);
 
-        if (!isReliableNoticeResult(text, sanitizedResult)) {
+        if (!isReliableNoticeResult(text, sanitizedResult) || isTooCloseToSource(text, sanitizedResult)) {
             const requiredFacts = extractRequiredNumberFacts(text);
             const requiredKoreanFacts = extractRequiredKoreanFacts(text);
             const repairPrompt = [
-                "이전 출력에는 원문 정보 누락, 메타 설명, 또는 깨진 문자가 포함되었습니다.",
+                "이전 출력에는 원문 정보 누락, 메타 설명, 깨진 문자, 또는 원문을 거의 그대로 옮긴 표현이 포함되었습니다.",
                 requiredFacts.length ? `반드시 포함해야 하는 원문 숫자: ${requiredFacts.join(", ")}` : "",
                 requiredKoreanFacts.length ? `반드시 포함해야 하는 원문 한국어 단어: ${requiredKoreanFacts.join(", ")}` : "",
                 "새 정보나 작성 날짜를 추가하지 말고, 아래 원문의 정보만 유지해 다시 다듬어 주세요.",
+                "짧은 메모를 그대로 반복하지 말고, 공식적인 가정통신문 문체의 완성된 안내 문장으로 바꿔 주세요.",
                 "원문의 한국어를 물음표나 깨진 문자로 바꾸지 마세요.",
                 "설명, 분석, 라벨 없이 최종 본문만 출력하세요.",
                 "각 문단이나 항목 첫머리에 간단한 플랫 이모지를 붙여 주세요.",
