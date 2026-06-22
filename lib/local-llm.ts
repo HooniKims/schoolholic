@@ -14,7 +14,7 @@ export const AVAILABLE_MODELS = [
     {
         id: "gemma4:e4b",
         name: "Gemma 4 E4B",
-        description: "기본 모델, 기준 속도기준 품질",
+        description: "가벼운 모델, 빠른 응답",
         requestModel: "google/gemma-4-e4b",
         defaultMaxTokens: 3072,
         minMaxTokens: 3072,
@@ -22,14 +22,22 @@ export const AVAILABLE_MODELS = [
     {
         id: "gemma4:e2b",
         name: "Gemma 4 E2B",
-        description: "기본보다 빠름, 품질은 간단",
+        description: "기본 모델, 가장 빠른 응답",
         requestModel: "google/gemma-4-e2b",
         defaultMaxTokens: 2048,
     },
     {
+        id: "lmstudio:gemma-4-12b-it",
+        name: "Gemma 4 12B",
+        description: "기본보다 느림, 긴 글 품질 보강",
+        requestModel: "gemma-4-12b-it",
+        defaultMaxTokens: 4096,
+        minMaxTokens: 4096,
+    },
+    {
         id: "lmstudio:gemma-4-26b-a4b-it-q4ks",
         name: "Gemma 4 26B Q4",
-        description: "느리지만 품질 높음",
+        description: "가장 느림, 품질 우선",
         requestModel: "gemma-4-26b-a4b-it",
         defaultMaxTokens: 4096,
         minMaxTokens: 4096,

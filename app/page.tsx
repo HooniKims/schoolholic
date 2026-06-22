@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Settings, Users, MessageCircle, CalendarPlus, LogIn, LogOut, User, Shield, Key, Globe, FileText } from 'lucide-react';
+import { Settings, Users, MessageCircle, CalendarPlus, LogIn, LogOut, User, Shield, Key, Globe } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import UserProfileModal from '@/components/UserProfileModal';
 import { deleteAccount } from '@/lib/auth-firebase';
@@ -43,15 +43,6 @@ export default function Home() {
             <Globe className="w-4 h-4" />
             {language === 'ko' ? t('switchToEnglish') : t('switchToKorean')}
           </button>
-
-          <Link
-            href="/privacy"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white/60 hover:text-white transition-all"
-            title={language === 'ko' ? '개인정보처리방침' : 'Privacy Policy'}
-          >
-            <FileText className="w-4 h-4" />
-            {language === 'ko' ? '개인정보처리방침' : 'Privacy Policy'}
-          </Link>
 
           {loading ? (
             <div className="w-5 h-5 border-2 border-cyan-400/40 border-t-cyan-400 rounded-full animate-spin" />
@@ -213,9 +204,20 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-blue-300/40 mt-12">
-          {t('footer')}
-        </p>
+        <footer className="mt-12 text-center text-xs text-blue-300/45">
+          <nav
+            aria-label={language === 'ko' ? '법적 안내' : 'Legal'}
+            className="mb-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
+          >
+            <Link href="/terms" className="transition-colors hover:text-blue-100">
+              {language === 'ko' ? '이용약관' : 'Terms of Service'}
+            </Link>
+            <Link href="/privacy" className="transition-colors hover:text-blue-100">
+              {language === 'ko' ? '개인정보처리방침' : 'Privacy Policy'}
+            </Link>
+          </nav>
+          <p>{t('footer')}</p>
+        </footer>
       </div>
 
       {/* 프로필 모달 */}
