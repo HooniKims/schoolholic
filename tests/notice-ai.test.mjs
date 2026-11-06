@@ -18,7 +18,7 @@ function loadTsModule(relativePath, overrides = {}) {
     const localLlm = overrides.localLlm ?? {
         AVAILABLE_MODELS: [],
         DEFAULT_MODEL: "gemma4:e4b",
-        LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT: "https://lm.alluser.site/v1/chat/completions",
+        LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT: "https://lm.alluser.kr/v1/chat/completions",
         buildChatCompletionBody: (params) => params,
         getLocalLlmApiKey: () => "test-key",
         getModelOptionLabel: (model) => model.name,
@@ -644,7 +644,7 @@ test("summarizeNote retries with the default model when the selected model is un
         localLlm: {
             AVAILABLE_MODELS: [],
             DEFAULT_MODEL: "gemma4:e2b",
-            LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT: "https://lm.alluser.site/v1/chat/completions",
+            LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT: "https://lm.alluser.kr/v1/chat/completions",
             buildChatCompletionBody: ({ modelId, ...params }) => ({
                 ...params,
                 model: modelId === "gemma4:e4b" ? "google/gemma-4-e4b" : "google/gemma-4-e2b",
