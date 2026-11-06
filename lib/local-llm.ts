@@ -1,4 +1,4 @@
-export const LOCAL_LLM_BASE_URL = "https://lm.alluser.site";
+export const LOCAL_LLM_BASE_URL = "https://lm.alluser.kr";
 export const LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT = `${LOCAL_LLM_BASE_URL}/v1/chat/completions`;
 
 export type LocalModelOption = {
