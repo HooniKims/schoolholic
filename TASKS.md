@@ -6,7 +6,7 @@
 - **Firebase**: Firestore (알림장 & 상담 예약 데이터) + Authentication (이메일/비밀번호 + Google 로그인)
   - 기존 데이터베이스 구조와 문서를 그대로 유지 (데이터 손실 없음)
   - 알림장(`notes`), 교사정보(`teachers`), 상담슬롯(`availableSlots`), 예약정보(`reservations`), 사용자(`users`) 컬렉션 공존
-- **AI**: 로컬 LLM (LM Studio via lm.alluser.site, 브라우저 직접 호출)
+- **AI**: 로컬 LLM (LM Studio via lm.alluser.kr, 브라우저 직접 호출)
 - **디자인/UI**: 
   - 기본 폰트: 가독성을 높인 **Pretendard** 적용
   - 다크 테마 기반 글래스모피즘(Glassmorphism)
@@ -208,10 +208,10 @@
   - [x] `components/NoticePlainText.tsx`에서 일반 텍스트 줄바꿈을 유지한 채 `http://`, `https://`, `www.` URL만 링크로 렌더링
   - [x] 문장 끝 구두점은 링크 바깥으로 분리하고, `www.` 주소는 `https://`를 붙여 새 탭으로 열리도록 처리
   - [x] 입력창 편집 흐름과 저장 포맷은 유지하고 `npm run lint`, `npm run build` 검증 완료
-- [x] 알림장 AI를 lm.alluser.site 기반 로컬 LM Studio 3개 모델 전용으로 정리
+- [x] 알림장 AI를 lm.alluser.kr 기반 로컬 LM Studio 3개 모델 전용으로 정리
   - [x] `lib/local-llm.ts`에 모델 목록, 기본값, 표시 라벨, 실제 요청 모델 매핑, max_tokens 규칙을 공통화
   - [x] 모델 목록을 `gemma4:e4b`, `gemma4:e2b`, `lmstudio:gemma-4-26b-a4b-it-q4ks` 3개만 남기고 기본값을 `gemma4:e2b`로 고정
-  - [x] 모든 알림장 AI 요청을 `https://lm.alluser.site/v1/chat/completions`로 전송하고 `X-API-Key` 인증 헤더를 유지
+  - [x] 모든 알림장 AI 요청을 `https://lm.alluser.kr/v1/chat/completions`로 전송하고 `X-API-Key` 인증 헤더를 유지
   - [x] 불필요한 외부 AI 패키지 의존성을 제거하고 모델 매핑 테스트를 추가
   - [x] `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`, 금지 문자열 검색 검증 완료
 - [x] 알림장 AI 요약 결과의 작성 방식 설명 제거
