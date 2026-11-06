@@ -88,7 +88,7 @@ test("local LLM requests use the LM Studio endpoint and mapped model names", () 
         getLocalModelConfig,
     } = loadTsModule("lib/local-llm.ts");
 
-    assert.equal(LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT, "https://lm.alluser.site/v1/chat/completions");
+    assert.equal(LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT, "https://lm.alluser.kr/v1/chat/completions");
 
     const expected = new Map([
         ["gemma4:e4b", { requestModel: "google/gemma-4-e4b", maxTokens: 3072 }],
