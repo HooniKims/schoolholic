@@ -1,13 +1,13 @@
 # 로컬 LLM API 연동 가이드
 
-이 프로젝트의 알림장 AI 다듬기 기능은 OpenAI 없이 `https://lm.alluser.site` 기반 로컬 LM Studio 엔드포인트만 사용한다.
+이 프로젝트의 알림장 AI 다듬기 기능은 OpenAI 없이 `https://lm.alluser.kr` 기반 로컬 LM Studio 엔드포인트만 사용한다.
 
 ## 엔드포인트
 
 | 항목 | 값 |
 |---|---|
-| base URL | `https://lm.alluser.site` |
-| chat completions endpoint | `https://lm.alluser.site/v1/chat/completions` |
+| base URL | `https://lm.alluser.kr` |
+| chat completions endpoint | `https://lm.alluser.kr/v1/chat/completions` |
 | 인증 헤더 | `X-API-Key` |
 | 환경변수 | `NEXT_PUBLIC_LOCAL_LLM_API_KEY` |
 
@@ -25,7 +25,7 @@
 ## 요청 형식
 
 ```ts
-await fetch("https://lm.alluser.site/v1/chat/completions", {
+await fetch("https://lm.alluser.kr/v1/chat/completions", {
     method: "POST",
     headers: {
         "Content-Type": "application/json",
