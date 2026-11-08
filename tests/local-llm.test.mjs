@@ -57,15 +57,15 @@ test("local LLM models expose the approved Gemma 4 options including 12B", () =>
             },
             {
                 id: "lmstudio:gemma-4-12b-it",
-                name: "Gemma 4 12B",
+                name: "Gemma 4 12B IT",
                 description: "기본보다 느림, 긴 글 품질 보강",
-                requestModel: "gemma-4-12b-it",
+                requestModel: "unsloth/gemma-4-12b-it",
             },
             {
-                id: "lmstudio:gemma-4-26b-a4b-it-q4ks",
-                name: "Gemma 4 26B Q4",
-                description: "가장 느림, 품질 우선",
-                requestModel: "gemma-4-26b-a4b-it",
+                id: "lmstudio:google-gemma-4-12b",
+                name: "Gemma 4 12B",
+                description: "Google 원본 12B, 느리지만 품질 우선",
+                requestModel: "google/gemma-4-12b",
             },
         ]
     );
@@ -74,8 +74,8 @@ test("local LLM models expose the approved Gemma 4 options including 12B", () =>
         [
             "Gemma 4 E4B - 가벼운 모델, 빠른 응답",
             "Gemma 4 E2B - 기본 모델, 가장 빠른 응답",
-            "Gemma 4 12B - 기본보다 느림, 긴 글 품질 보강",
-            "Gemma 4 26B Q4 - 가장 느림, 품질 우선",
+            "Gemma 4 12B IT - 기본보다 느림, 긴 글 품질 보강",
+            "Gemma 4 12B - Google 원본 12B, 느리지만 품질 우선",
         ]
     );
 });
@@ -93,8 +93,8 @@ test("local LLM requests use the LM Studio endpoint and mapped model names", () 
     const expected = new Map([
         ["gemma4:e4b", { requestModel: "google/gemma-4-e4b", maxTokens: 3072 }],
         ["gemma4:e2b", { requestModel: "google/gemma-4-e2b", maxTokens: 2048 }],
-        ["lmstudio:gemma-4-12b-it", { requestModel: "gemma-4-12b-it", maxTokens: 4096 }],
-        ["lmstudio:gemma-4-26b-a4b-it-q4ks", { requestModel: "gemma-4-26b-a4b-it", maxTokens: 4096 }],
+        ["lmstudio:gemma-4-12b-it", { requestModel: "unsloth/gemma-4-12b-it", maxTokens: 4096 }],
+        ["lmstudio:google-gemma-4-12b", { requestModel: "google/gemma-4-12b", maxTokens: 4096 }],
     ]);
 
     for (const model of AVAILABLE_MODELS) {
@@ -167,7 +167,7 @@ test("local LLM max token floors are enforced for larger models", () => {
         buildChatCompletionBody({
             systemMessage: "system",
             userPrompt: "prompt",
-            modelId: "lmstudio:gemma-4-26b-a4b-it-q4ks",
+            modelId: "lmstudio:google-gemma-4-12b",
             maxTokens: 1024,
         }).max_tokens,
         4096
